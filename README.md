@@ -103,6 +103,12 @@ dist/            Build output
 
 ## Install
 
+### Homebrew
+
+```bash
+brew install --cask supercmdlabs/supercmd/supercmd
+```
+
 ### Download the app
 
 Download the latest `.dmg` from the [Releases page](https://github.com/SuperCmdLabs/SuperCmd/releases/latest):
