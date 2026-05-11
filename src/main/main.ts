@@ -7040,64 +7040,47 @@ async function openTargetWithApplication(target: string, application?: string): 
   const appName = String(application || '').trim();
   const { normalizedTarget, launchTarget, externalTarget } = normalizeOpenTarget(rawTarget);
 
+  // All three branches fire-and-forget — same reason as openAppByPath /
+  // openSettingsPane. Awaiting LaunchServices held the launcher visible
+  // for the dispatch window (1-3s on macOS).
+
   if (appName) {
-    try {
-      const { spawn } = require('child_process');
-      const exitCode = await new Promise<number>((resolve) => {
-        const proc = spawn('open', ['-a', appName, launchTarget], { shell: false });
-        let stderr = '';
-
-        proc.stderr?.on('data', (data: Buffer) => {
-          stderr += data.toString();
-        });
-
-        proc.on('close', (code: number | null) => {
-          const resolved = code ?? 1;
-          if (resolved !== 0) {
-            console.error(`Failed to open target with ${appName}: ${launchTarget}`, stderr.trim() || `exit code ${resolved}`);
-          }
-          resolve(resolved);
-        });
-
-        proc.on('error', (err: Error) => {
-          console.error(`Failed to open target with ${appName}: ${launchTarget}`, err);
-          resolve(1);
-        });
-      });
-      return exitCode === 0;
-    } catch (error) {
-      console.error(`Failed to open target with ${appName}: ${launchTarget}`, error);
-      return false;
-    }
+    const { spawn } = require('child_process');
+    const proc = spawn('/usr/bin/open', ['-a', appName, launchTarget], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    proc.on('error', (err: Error) => {
+      console.error(`Failed to open target with ${appName}: ${launchTarget}`, err);
+    });
+    proc.unref();
+    return true;
   }
 
   if (path.isAbsolute(normalizedTarget)) {
-    try {
-      const openPathError = await shell.openPath(normalizedTarget);
-      if (openPathError) {
-        console.error(`Failed to open path: ${normalizedTarget}`, openPathError);
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error(`Failed to open path: ${normalizedTarget}`, error);
-      return false;
-    }
+    void shell
+      .openPath(normalizedTarget)
+      .then((openPathError: string) => {
+        if (openPathError) {
+          console.error(`Failed to open path: ${normalizedTarget}`, openPathError);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(`Failed to open path: ${normalizedTarget}`, error);
+      });
+    return true;
   }
 
-  try {
-    await shell.openExternal(externalTarget);
-    return true;
-  } catch (error) {
+  void shell.openExternal(externalTarget).catch((error: unknown) => {
     if (externalTarget !== rawTarget) {
-      try {
-        await shell.openExternal(rawTarget);
-        return true;
-      } catch {}
+      void shell.openExternal(rawTarget).catch(() => {
+        console.error(`Failed to open URL: ${rawTarget}`, error);
+      });
+      return;
     }
     console.error(`Failed to open URL: ${rawTarget}`, error);
-    return false;
-  }
+  });
+  return true;
 }
 
 async function openQuickLinkById(id: string, dynamicValues?: Record<string, string>): Promise<boolean> {
@@ -7242,6 +7225,9 @@ function createWindow(): void {
       nodeIntegration: true,
       contextIsolation: false,
       sandbox: false,
+      // Without this, Chromium throttles paint of the hidden launcher,
+      // so the first frame after show() is catch-up and feels sluggish.
+      backgroundThrottling: false,
       preload: path.join(__dirname, 'preload.js'),
     },
   });
@@ -8119,6 +8105,10 @@ function resolveLauncherEntryTargetWindowId(): string | null {
   return fallback || null;
 }
 
+function resolveLauncherEntryTargetWorkArea(): { x: number; y: number; width: number; height: number } | null {
+  return cloneWorkArea(launcherEntryWindowManagementTargetWorkArea ?? windowManagementTargetWorkArea);
+}
+
 function captureFrontmostAppContext(): void {
   if (process.platform !== 'darwin') return;
   try {
@@ -8211,9 +8201,17 @@ async function showWindow(options?: { systemCommandId?: string }): Promise<void>
   if (launcherMode !== 'onboarding') {
     captureFrontmostAppContext();
     launcherEntryFrontmostApp = cloneFrontmostAppContext(lastFrontmostApp);
-    await captureWindowManagementTargetWindow();
-    launcherEntryWindowManagementTargetWindowId = String(windowManagementTargetWindowId || '').trim() || null;
-    launcherEntryWindowManagementTargetWorkArea = cloneWorkArea(windowManagementTargetWorkArea);
+    // Capture is a worker IPC (~50 ms) — don't await it. WM consumers
+    // already fall back to windowManagementTargetWindowId, which the
+    // capture sets as a side-effect, so a racing consumer still sees data.
+    launcherEntryWindowManagementTargetWindowId = null;
+    launcherEntryWindowManagementTargetWorkArea = null;
+    void captureWindowManagementTargetWindow()
+      .then(() => {
+        launcherEntryWindowManagementTargetWindowId = String(windowManagementTargetWindowId || '').trim() || null;
+        launcherEntryWindowManagementTargetWorkArea = cloneWorkArea(windowManagementTargetWorkArea);
+      })
+      .catch(() => {});
     // AX-only selection capture on window open: avoid clipboard fallback
     // (synthetic Cmd+C) here because the promise is not awaited — by the
     // time the AX check completes (~50 ms osascript spawn), mainWindow.show()
@@ -8239,20 +8237,9 @@ async function showWindow(options?: { systemCommandId?: string }): Promise<void>
     selectedTextSnapshot: initialSelectionSnapshot,
   };
 
-  // Notify renderer before showing the window so it can finalize view state
-  // (including contextual command list) before first paint.
-  mainWindow.webContents.send('window-shown', windowShownPayload);
-
-  if (selectionSnapshotPromise) {
-    void selectionSnapshotPromise.then((snapshot) => {
-      if (!mainWindow || mainWindow.isDestroyed()) return;
-      const nextSnapshot = String(snapshot || '').trim();
-      const prevSnapshot = String(initialSelectionSnapshot || '').trim();
-      if (nextSnapshot === prevSnapshot) return;
-      mainWindow.webContents.send('selection-snapshot-updated', { selectedTextSnapshot: nextSnapshot });
-    });
-  }
-
+  // Show first, notify second. The window-shown handler does non-trivial
+  // work (state resets, focus, optional fetch); running it before show()
+  // makes the user wait for that work before seeing the window.
   if (shouldActivateLauncherWindow) {
     try {
       app.focus({ steal: true });
@@ -8275,6 +8262,18 @@ async function showWindow(options?: { systemCommandId?: string }): Promise<void>
   }
   mainWindow.moveTop();
   isVisible = true;
+
+  mainWindow.webContents.send('window-shown', windowShownPayload);
+
+  if (selectionSnapshotPromise) {
+    void selectionSnapshotPromise.then((snapshot) => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      const nextSnapshot = String(snapshot || '').trim();
+      const prevSnapshot = String(initialSelectionSnapshot || '').trim();
+      if (nextSnapshot === prevSnapshot) return;
+      mainWindow.webContents.send('selection-snapshot-updated', { selectedTextSnapshot: nextSnapshot });
+    });
+  }
 
   // Now that the window is visible on the current Space, confine it here
   // and re-sync AeroSpace (the pre-show move may have been a no-op for
@@ -9324,7 +9323,7 @@ async function openLauncherAndRunSystemCommand(
 
   if (isWindowManagementSystemCommand(commandId)) {
     const launcherTargetWindowId = resolveLauncherEntryTargetWindowId();
-    const launcherTargetWorkArea = cloneWorkArea(launcherEntryWindowManagementTargetWorkArea);
+    const launcherTargetWorkArea = resolveLauncherEntryTargetWorkArea();
     if (isVisible && (launcherTargetWindowId || launcherTargetWorkArea)) {
       windowManagementTargetWindowId = launcherTargetWindowId;
       windowManagementTargetWorkArea = launcherTargetWorkArea;
@@ -9941,7 +9940,7 @@ async function runCommandById(commandId: string, source: 'launcher' | 'hotkey' |
       ? resolveLauncherEntryTargetWindowId()
       : (String(windowManagementTargetWindowId || '').trim() || null);
     const preferredTargetWorkArea = source === 'launcher' && isVisible
-      ? cloneWorkArea(launcherEntryWindowManagementTargetWorkArea)
+      ? resolveLauncherEntryTargetWorkArea()
       : cloneWorkArea(windowManagementTargetWorkArea);
     if (source === 'launcher' && isVisible) {
       windowManagementTargetWindowId = preferredTargetWindowId;
@@ -9995,7 +9994,7 @@ async function runCommandById(commandId: string, source: 'launcher' | 'hotkey' |
       ? resolveLauncherEntryTargetWindowId()
       : (String(windowManagementTargetWindowId || '').trim() || null);
     const preferredTargetWorkArea = source === 'launcher' && isVisible
-      ? cloneWorkArea(launcherEntryWindowManagementTargetWorkArea)
+      ? resolveLauncherEntryTargetWorkArea()
       : cloneWorkArea(windowManagementTargetWorkArea);
     if (source === 'launcher' && isVisible) {
       windowManagementTargetWindowId = preferredTargetWindowId;
@@ -10059,9 +10058,7 @@ async function runCommandById(commandId: string, source: 'launcher' | 'hotkey' |
       const created = createScriptCommandTemplate();
       invalidateScriptCommandsCache();
       invalidateCache();
-      try {
-        await shell.openPath(created.scriptPath);
-      } catch {}
+      void shell.openPath(created.scriptPath).catch(() => {});
       console.log(`[ScriptCommand] Created: ${path.basename(created.scriptPath)}`);
       if (source === 'launcher') {
         setTimeout(() => hideWindow(), 50);
@@ -10076,7 +10073,9 @@ async function runCommandById(commandId: string, source: 'launcher' | 'hotkey' |
   if (commandId === 'system-open-script-commands') {
     try {
       const dir = getSuperCmdScriptCommandsDirectory();
-      await shell.openPath(dir);
+      void shell.openPath(dir).catch((error: unknown) => {
+        console.error('Failed to open script command directory:', error);
+      });
       if (source === 'launcher') {
         setTimeout(() => hideWindow(), 50);
       }
@@ -10206,10 +10205,13 @@ async function runCommandById(commandId: string, source: 'launcher' | 'hotkey' |
     }
   }
 
-  const success = await executeCommand(commandId);
-  if (success && source === 'launcher') {
+  // Hide up-front rather than awaiting executeCommand. App/settings paths
+  // are already fire-and-forget so this is mostly defense in depth — if a
+  // future path adds a slow await, the launcher still feels instant.
+  if (source === 'launcher') {
     setTimeout(() => hideWindow(), 50);
   }
+  const success = await executeCommand(commandId);
   return success;
 }
 
@@ -13168,7 +13170,9 @@ app.whenReady().then(async () => {
   ipcMain.handle('open-custom-scripts-folder', async () => {
     try {
       const ensured = ensureSampleScriptCommand();
-      await shell.openPath(ensured.scriptsDir);
+      void shell.openPath(ensured.scriptsDir).catch((error: unknown) => {
+        console.error('Failed to open custom scripts folder:', error);
+      });
       return {
         success: true,
         folderPath: ensured.scriptsDir,

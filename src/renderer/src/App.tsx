@@ -447,6 +447,8 @@ const App: React.FC = () => {
   const inlineQuickLinkInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const fileSearchRequestSeqRef = useRef(0);
   const commandsRef = useRef<CommandInfo[]>([]);
+  const lastCommandsFetchAtRef = useRef(0);
+  const executingCommandRef = useRef(false);
   const showActionsRef = useRef(false);
   const selectedCommandRef = useRef<CommandInfo | null>(null);
   commandsRef.current = commands;
@@ -719,6 +721,7 @@ const App: React.FC = () => {
     try {
       const fetchedCommands = await window.electron.getCommands();
       setCommands(fetchedCommands);
+      lastCommandsFetchAtRef.current = Date.now();
     } catch (error) {
       console.error('Failed to fetch commands:', error);
     } finally {
@@ -796,7 +799,6 @@ const App: React.FC = () => {
       if (!isOnboardingMode) {
         refreshThemeFromStorage(false);
       }
-      console.log('[WINDOW-SHOWN] fired', payload);
       const isWhisperMode = payload?.mode === 'whisper';
       const isSpeakMode = payload?.mode === 'speak';
       const isPromptMode = payload?.mode === 'prompt';
@@ -998,12 +1000,28 @@ const App: React.FC = () => {
         setIsCompactCollapsed(true);
         exitAiMode();
       }
-      // Re-fetch commands every time the window is shown
-      // so newly installed extensions appear immediately
-      fetchCommands({ showLoading: false });
-      loadLauncherPreferences();
-      window.electron.aiIsAvailable().then(setAiAvailable);
+      // Focus synchronously before any IO — a keystroke arriving back-to-back
+      // with the show event must land on a focused input.
       inputRef.current?.focus();
+
+      // Defer housekeeping past first paint so it doesn't compete with the
+      // user's first keystroke or list rendering.
+      const runDeferred = () => {
+        const COMMANDS_REFRESH_TTL_MS = 5 * 60_000;
+        if (
+          commandsRef.current.length === 0 ||
+          Date.now() - lastCommandsFetchAtRef.current > COMMANDS_REFRESH_TTL_MS
+        ) {
+          fetchCommands({ showLoading: false });
+        }
+        loadLauncherPreferences();
+        window.electron.aiIsAvailable().then(setAiAvailable);
+      };
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(runDeferred, { timeout: 200 });
+      } else {
+        setTimeout(runDeferred, 0);
+      }
     });
     return cleanupWindowShown;
   }, [expandLauncherForDirectLaunch, fetchCommands, loadLauncherPreferences, refreshSelectedTextSnapshot, openWhisper, openSpeak, openCursorPrompt, resetCursorPromptState, exitAiMode, setShowCursorPrompt, setShowWhisperHint, setMemoryFeedback, setMemoryActionLoading, setScriptCommandSetup, setScriptCommandOutput, setExtensionView, setSearchQuery, setSelectedIndex, setShowSnippetManager, setShowNotesSearch, setShowCanvasSearch, setShowQuickLinkManager, setShowFileSearch, openClipboardManager, setShowClipboardManager, openSnippetManager, openQuickLinkManager, openFileSearch, openSchedule, openCamera, openOnboarding, setShowCamera, setShowSchedule, setShowWindowManager, setShowWhisper, setShowSpeak, setShowWhisperOnboarding]);
@@ -3011,7 +3029,12 @@ const App: React.FC = () => {
   }, [navigationStyle]);
 
   const handleCommandExecute = async (command: CommandInfo) => {
+    // Drop a second Enter while the first command is still resolving — a
+    // fast double-press could otherwise re-fire the same command or a
+    // different one if selection moved during the IPC roundtrip.
+    if (executingCommandRef.current) return;
     try {
+      executingCommandRef.current = true;
       // Browser-search synthetic action: open the resolved URL/search query
       // in the default browser. Bypasses recent-commands tracking — the
       // browser-search history module records the entry itself.
@@ -3165,6 +3188,8 @@ const App: React.FC = () => {
       setSelectedIndex(0);
     } catch (error) {
       console.error('Failed to execute command:', error);
+    } finally {
+      executingCommandRef.current = false;
     }
   };
   const handleCommandRowClick = useCallback(
