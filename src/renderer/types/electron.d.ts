@@ -603,6 +603,23 @@ export interface SoulverResponse {
   error: string | null;
 }
 
+export interface AppRemnant {
+  path: string;
+  label: string;
+  location: string;
+  sizeBytes: number;
+  isAppBundle: boolean;
+}
+
+export interface AppUninstallScanResult {
+  appName: string;
+  bundleId: string;
+  appPath: string;
+  appIconDataUrl: string;
+  remnants: AppRemnant[];
+  totalSizeBytes: number;
+}
+
 export interface ElectronAPI {
   // Lifecycle
   rendererReady: () => void;
@@ -839,11 +856,14 @@ export interface ElectronAPI {
   ensureCalendarAccess: (options?: { prompt?: boolean }) => Promise<CalendarPermissionResult>;
   getCalendarEvents: (payload: { start: string; end: string }) => Promise<CalendarEventsResult>;
   moveToTrash: (paths: string[]) => Promise<void>;
+  appUninstallScan: (appPath: string) => Promise<AppUninstallScanResult>;
+  appUninstallExecute: (paths: string[]) => Promise<{ success: boolean; errors: string[] }>;
   readFile: (filePath: string) => Promise<string>;
   writeFile: (filePath: string, content: string) => Promise<void>;
   fileExists: (filePath: string) => Promise<boolean>;
   readDir: (dirPath: string) => Promise<string[]>;
   getFileIconDataUrl: (filePath: string, size?: number) => Promise<string | null>;
+  getAppIconDataUrl: (appPath: string, size?: number) => Promise<string | null>;
   searchIndexedFiles: (query: string, options?: { limit?: number }) => Promise<IndexedFileSearchResult[]>;
   getFileSearchIndexStatus: () => Promise<FileSearchIndexStatus>;
   refreshFileSearchIndex: (reason?: string) => Promise<FileSearchIndexStatus>;

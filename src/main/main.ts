@@ -10,15 +10,20 @@
  * - Per-command hotkey registration
  */
 
+// Suppress EPIPE errors from console.log when stdout pipe breaks
+process.stdout?.on?.('error', () => {});
+process.stderr?.on?.('error', () => {});
+
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { fork, type ChildProcess } from 'child_process';
+import { fork, execFileSync, type ChildProcess } from 'child_process';
 import { getNativeBinaryPath, resolvePackagedUnpackedPath } from './native-binary';
 import { getAvailableCommands, executeCommand, invalidateCache } from './commands';
 import { loadSettings, saveSettings, setOAuthToken, getOAuthToken, removeOAuthToken, loadWindowState, saveWindowState, clearWindowState, loadNotesWindowState, saveNotesWindowState, loadSettingsLocation, getDefaultSettingsPath, relocateSettingsFile, resetSettingsLocation, startSettingsWatcher, setSettingsBroadcaster, setExternalSettingsChangeHandler, settingsFileExistsOrICloudPlaceholder } from './settings-store';
 import type { AppSettings, RelocateMode } from './settings-store';
 import { streamAI, streamAIChat, isAIAvailable, transcribeAudio } from './ai-provider';
+import { scanAppRemnants } from './app-uninstaller';
 import * as soulverCalculator from './soulver-calculator';
 import { addMemory, buildMemoryContextSystemPrompt } from './memory';
 import {
@@ -1962,11 +1967,10 @@ function computeDetachedPopupPosition(
   }
 
   if (popupName === DETACHED_MEMORY_STATUS_WINDOW_NAME) {
-    // Horizontally centered, vertically centered in the bottom half of the
-    // work area (i.e. 3/4 of the way down the screen).
+    // Horizontally centered, near the bottom of the work area
     return {
       x: workArea.x + Math.floor((workArea.width - width) / 2),
-      y: workArea.y + Math.floor(workArea.height * 0.75 - height / 2),
+      y: workArea.y + Math.floor(workArea.height * 0.88 - height / 2),
     };
   }
 
@@ -14579,6 +14583,73 @@ return appURL's |path|() as text`,
     }
   });
 
+  // App uninstall: scan for remnants
+  ipcMain.handle('app-uninstall-scan', async (_event: any, appPath: string) => {
+    try {
+      return await scanAppRemnants(appPath);
+    } catch (e) {
+      console.error('[app-uninstall-scan] Error:', e);
+      return { appName: path.basename(appPath, '.app'), bundleId: '', appPath, appIconDataUrl: '', remnants: [], totalSizeBytes: 0 };
+    }
+  });
+
+  // App uninstall: execute (move paths to trash)
+  ipcMain.handle('app-uninstall-execute', async (_event: any, paths: string[]) => {
+    const home = app.getPath('home');
+    const allowedPrefixes = [
+      '/Applications/',
+      path.join(home, 'Applications') + '/',
+      path.join(home, 'Library') + '/',
+      '/Library/LaunchAgents/',
+      '/Library/LaunchDaemons/',
+    ];
+
+    // Validate all paths — must be absolute and under known directories
+    const validPaths = paths.filter(p => {
+      if (!path.isAbsolute(p)) return false;
+      // Reject paths with traversal
+      if (p.includes('/../') || p.endsWith('/..')) return false;
+      return allowedPrefixes.some(prefix => p.startsWith(prefix));
+    });
+
+    const errors: string[] = [];
+    const needsElevation: string[] = [];
+
+    for (const p of validPaths) {
+      try {
+        await shell.trashItem(p);
+      } catch (e: any) {
+        if (e.message?.includes('permission') || e.message?.includes('EACCES') || e.message?.includes('Operation not permitted')) {
+          needsElevation.push(p);
+        } else {
+          errors.push(`${p}: ${e.message || e}`);
+        }
+      }
+    }
+
+    // Retry failed paths with AppleScript elevation (prompts for admin password)
+    // Uses Finder's native "move to trash" via AppleScript — no shell interpolation
+    if (needsElevation.length > 0) {
+      try {
+        const { execFile } = require('child_process');
+        const { promisify } = require('util');
+        const execFileAsync = promisify(execFile);
+
+        // Use Finder's native trash via AppleScript — safe, no shell injection
+        const posixItems = needsElevation.map(p => `(POSIX file "${p.replace(/["\\]/g, '\\$&')}") as alias`).join(', ');
+        const script = `tell application "Finder" to delete {${posixItems}}`;
+
+        await execFileAsync('/usr/bin/osascript', ['-e', script], { timeout: 30000 });
+      } catch (e: any) {
+        for (const p of needsElevation) {
+          errors.push(`${p}: Permission denied`);
+        }
+      }
+    }
+
+    return { success: errors.length === 0, errors };
+  });
+
   // File system operations for extensions
   const fs = require('fs');
   const fsPromises = require('fs/promises');
@@ -14684,6 +14755,43 @@ return appURL's |path|() as text`,
         return icon.resize({ width: size, height: size }).toDataURL();
       }
       return null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Get .app bundle icon by reading its .icns file directly (avoids template-image transparency issues)
+  ipcMain.handle('get-app-icon-data-url', async (_event: any, appPath: string, size = 32) => {
+    try {
+      const plistPath = path.join(appPath, 'Contents', 'Info.plist');
+      if (!fs.existsSync(plistPath)) return null;
+
+      let iconFileName = '';
+      try {
+        iconFileName = execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleIconFile', plistPath], {
+          encoding: 'utf-8',
+          timeout: 3000,
+        }).trim();
+      } catch { return null; }
+
+      if (!iconFileName) return null;
+      if (!iconFileName.endsWith('.icns')) iconFileName += '.icns';
+
+      const icnsPath = path.join(appPath, 'Contents', 'Resources', iconFileName);
+      if (!fs.existsSync(icnsPath)) return null;
+
+      // Convert .icns to PNG via sips, return as base64 data URL (avoid nativeImage crash)
+      const os = require('os');
+      const tmpPng = path.join(os.tmpdir(), `sc-icon-${Date.now()}.png`);
+      try {
+        execFileSync('/usr/bin/sips', ['-s', 'format', 'png', '-z', String(size * 2), String(size * 2), icnsPath, '--out', tmpPng], {
+          timeout: 5000,
+        });
+        const pngBuf = fs.readFileSync(tmpPng);
+        return `data:image/png;base64,${pngBuf.toString('base64')}`;
+      } finally {
+        try { fs.unlinkSync(tmpPng); } catch {}
+      }
     } catch {
       return null;
     }
