@@ -795,6 +795,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const cleanupWindowHidden = window.electron.onWindowHidden(() => {
       lastWindowHiddenAtRef.current = Date.now();
+      setSearchQuery('');
+      setSelectedIndex(0);
     });
     return cleanupWindowHidden;
   }, []);
@@ -859,8 +861,6 @@ const App: React.FC = () => {
         setScriptCommandOutput(null);
         setExtensionView(null);
         localStorage.removeItem(LAST_EXT_KEY);
-        setSearchQuery('');
-        setSelectedIndex(0);
         exitAiMode();
         if (!isOnboardingMode) {
           expandLauncherForDirectLaunch();
@@ -954,8 +954,6 @@ const App: React.FC = () => {
         setMemoryFeedback(null);
         setMemoryActionLoading(false);
         setSelectedTextSnapshot(String(payload?.selectedTextSnapshot || '').trim());
-        setSearchQuery('');
-        setSelectedIndex(0);
         exitAiMode();
         expandLauncherForDirectLaunch();
         return;
@@ -1005,10 +1003,10 @@ const App: React.FC = () => {
       const pendingQuery = pendingWindowShownQueryRef.current;
       pendingWindowShownQueryRef.current = null;
       if (pendingQuery) {
+        setSearchQuery(pendingQuery);
+        setSelectedIndex(0);
         pendingFocusInlineArgRef.current = true;
       }
-      setSearchQuery(pendingQuery ?? '');
-      setSelectedIndex(0);
       // When a pending query is pre-filled (e.g. hotkey-triggered no-view
       // command with missing args), expand out of compact so results are
       // immediately visible.
@@ -2375,12 +2373,8 @@ const App: React.FC = () => {
       if (!trimmed) return false;
       const ok = await browserSearch.executeBrowserSearch(trimmed);
       if (ok) {
-        setSearchQuery('');
-        setSelectedIndex(0);
         setBrowserSearchSkipAutoComplete(false);
-        try {
-          window.electron.hideWindow();
-        } catch {}
+        try { window.electron.hideWindow(); } catch {}
       }
       return ok;
     },
@@ -2926,8 +2920,6 @@ const App: React.FC = () => {
         await fetchCommands();
       } else if (!options?.background) {
         await window.electron.hideWindow();
-        setSearchQuery('');
-        setSelectedIndex(0);
       }
 
       if (!options?.background && !options?.skipRecent) {
@@ -2975,8 +2967,6 @@ const App: React.FC = () => {
             clearInlineQuickLinkDynamicValuesForId(quickLinkId);
             setQuickLinkDynamicPrompt(null);
             await updateRecentCommands(command.id);
-            setSearchQuery('');
-            setSelectedIndex(0);
             await window.electron.hideWindow();
             return true;
           }
@@ -3005,8 +2995,6 @@ const App: React.FC = () => {
       clearInlineQuickLinkDynamicValuesForId(quickLinkId);
       setQuickLinkDynamicPrompt(null);
       await updateRecentCommands(command.id);
-      setSearchQuery('');
-      setSelectedIndex(0);
       await window.electron.hideWindow();
       return true;
     },
@@ -3119,8 +3107,6 @@ const App: React.FC = () => {
       const filePath = getFileResultPathFromCommand(command);
       if (filePath) {
         await openFileResultByPath(filePath);
-        setSearchQuery('');
-        setSelectedIndex(0);
         return;
       }
 
@@ -3177,9 +3163,7 @@ const App: React.FC = () => {
             } else {
               upsertMenuBarExtension(hydratedWithInlineArguments);
             }
-            window.electron.hideWindow();
-            setSearchQuery('');
-            setSelectedIndex(0);
+            try { window.electron.hideWindow(); } catch {}
             await updateRecentCommands(command.id);
             return;
           }
@@ -3242,10 +3226,10 @@ const App: React.FC = () => {
           command.id === 'system-restart' ||
           command.id === 'system-logout'
         ) {
-          await window.electron.executeCommand(command.id);
+          const confirmed = await window.electron.executeCommand(command.id);
+          if (!confirmed) return;
           await updateRecentCommands(command.id);
-          setSearchQuery('');
-          setSelectedIndex(0);
+          try { window.electron.hideWindow(); } catch {}
           return;
         }
         const ok = window.confirm(`Run "${command.title}"?`);
@@ -3254,8 +3238,7 @@ const App: React.FC = () => {
 
       await window.electron.executeCommand(command.id);
       await updateRecentCommands(command.id);
-      setSearchQuery('');
-      setSelectedIndex(0);
+      try { window.electron.hideWindow(); } catch {}
     } catch (error) {
       console.error('Failed to execute command:', error);
     } finally {
@@ -3867,8 +3850,6 @@ const App: React.FC = () => {
             upsertMenuBarExtension(updatedBundle);
           }
           window.electron.hideWindow();
-          setSearchQuery('');
-          setSelectedIndex(0);
           localStorage.removeItem(LAST_EXT_KEY);
         }}
         setExtensionPreferenceSetup={setExtensionPreferenceSetup}
