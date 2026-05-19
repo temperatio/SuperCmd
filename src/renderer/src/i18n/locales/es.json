@@ -1,85 +1,85 @@
 {
   "common": {
     "actions": "Actions",
-    "loading": "Loading...",
+    "loading": "Cargando...",
     "noResults": "No results",
-    "search": "Search...",
-    "save": "Save",
-    "saving": "Saving...",
-    "cancel": "Cancel",
-    "close": "Close",
-    "continue": "Continue",
-    "back": "Back",
-    "remove": "Remove",
-    "add": "Add",
-    "edit": "Edit",
-    "delete": "Delete",
-    "enable": "Enable",
-    "disable": "Disable",
-    "enabled": "Enabled",
-    "disabled": "Disabled",
-    "success": "Success",
+    "search": "Buscar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "remove": "Eliminar",
+    "add": "Añadir",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "enable": "Habilitar",
+    "disable": "Deshabilitar",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado",
+    "success": "Éxito",
     "error": "Error",
-    "warning": "Warning",
-    "info": "Info",
-    "copy": "Copy",
-    "paste": "Paste",
-    "cut": "Cut",
-    "selectAll": "Select All",
-    "undo": "Undo",
-    "redo": "Redo",
-    "refresh": "Refresh",
+    "warning": "Advertencia",
+    "info": "Información",
+    "copy": "Copiar",
+    "paste": "Pegar",
+    "cut": "Cortar",
+    "selectAll": "Seleccionar todo",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "refresh": "Actualizar",
     "reload": "Reload",
-    "apply": "Apply",
-    "reset": "Reset",
-    "clear": "Clear",
-    "done": "Done",
+    "apply": "Aplicar",
+    "reset": "Restablecer",
+    "clear": "Limpiar",
+    "done": "Hecho",
     "ok": "OK",
-    "yes": "Yes",
+    "yes": "Sí",
     "no": "No",
     "submit": "Submit",
     "browse": "Browse",
     "choose": "Choose",
     "change": "Change",
-    "update": "Update",
-    "install": "Install",
-    "uninstall": "Uninstall",
+    "update": "Actualizar",
+    "install": "Instalar",
+    "uninstall": "Desinstalar",
     "download": "Download",
     "upload": "Upload",
     "import": "Import",
     "export": "Export",
-    "open": "Open",
+    "open": "Abrir",
     "create": "Create",
-    "new": "New",
-    "unknown": "Unknown",
-    "none": "None",
-    "default": "Default",
-    "custom": "Custom",
+    "new": "Nuevo",
+    "unknown": "Desconocido",
+    "none": "Ninguno",
+    "default": "Predeterminado",
+    "custom": "Personalizado",
     "other": "Other",
     "all": "All",
-    "required": "Required",
-    "optional": "Optional",
-    "preferences": "Preferences",
-    "settings": "Settings",
+    "required": "Requerido",
+    "optional": "Opcional",
+    "preferences": "Preferencias",
+    "settings": "Configuración",
     "general": "General",
-    "advanced": "Advanced",
-    "about": "About",
-    "version": "Version",
-    "language": "Language",
-    "appearance": "Appearance",
-    "theme": "Theme",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System",
-    "auto": "Auto"
+    "advanced": "Avanzado",
+    "about": "Acerca de",
+    "version": "Versión",
+    "language": "Idioma",
+    "appearance": "Apariencia",
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema",
+    "auto": "Automático"
   },
   "settings": {
-    "title": "SuperCmd Settings",
+    "title": "Configuración",
     "tabs": {
       "general": "General",
-      "ai": "AI",
-      "extensions": "Extensions",
-      "advanced": "Advanced"
+      "ai": "IA",
+      "extensions": "Extensiones",
+      "advanced": "Avanzado"
     },
     "general": {
       "title": "General",
@@ -97,19 +97,19 @@
         "disabled": "Disabled"
       },
       "language": {
-        "title": "Language",
-        "description": "Choose the display language or follow the system locale.",
-        "system": "Follow System",
+        "title": "Idioma",
+        "description": "Selecciona el idioma de visualización de SuperCmd",
+        "system": "Seguir sistema",
         "en": "English",
-        "zh-Hans": "Simplified Chinese",
-        "zh-Hant": "Traditional Chinese",
-        "ja": "Japanese",
-        "ko": "Korean",
-        "fr": "French",
-        "de": "German",
-        "es": "Spanish",
-        "ru": "Russian",
-        "it": "Italian"
+        "zh-Hans": "简体中文",
+        "zh-Hant": "繁體中文",
+        "ja": "日本語",
+        "ko": "한국어",
+        "fr": "Français",
+        "de": "Deutsch",
+        "es": "Español",
+        "ru": "Ruso",
+        "it": "Italiano"
       },
       "fontSize": {
         "title": "Font Size",
@@ -180,17 +180,17 @@
         "version": "SuperCmd v{version}"
       },
       "autoQuit": {
-        "title": "Auto Quit",
-        "timeout": "Default Timeout",
-        "description": "Apps with Auto Quit enabled will quit after this duration of inactivity",
-        "minute": "minute",
-        "minutes": "minutes"
+        "title": "Cierre automático",
+        "timeout": "Tiempo de espera",
+        "description": "Las apps con cierre automático activado se cerrarán tras este período de inactividad",
+        "minute": "minuto",
+        "minutes": "minutos"
       }
     },
     "ai": {
-      "title": "AI Settings",
-      "loading": "Loading AI settings...",
-      "saved": "Saved",
+      "title": "Configuracion de IA",
+      "loading": "Cargando configuracion de IA...",
+      "saved": "Guardado",
       "languages": {
         "arabic": "Arabic",
         "chineseMandarin": "Chinese (Mandarin)",
@@ -209,68 +209,68 @@
         "spanishSpain": "Spanish (Spain)"
       },
       "enableAI": {
-        "title": "Enable AI",
-        "description": "Master switch for AI features."
+        "title": "Activar IA",
+        "description": "Interruptor principal para las funciones de IA."
       },
       "tabs": {
-        "apiKeys": "API Keys",
+        "apiKeys": "Claves API",
         "llm": "LLM",
         "whisper": "SuperCmd Whisper",
         "speak": "SuperCmd Read"
       },
       "apiKeys": {
         "openai": {
-          "label": "ChatGPT (OpenAI) API Key",
+          "label": "Clave API de OpenAI",
           "placeholder": "sk-..."
         },
         "anthropic": {
-          "label": "Claude (Anthropic) API Key",
+          "label": "Clave API de Anthropic",
           "placeholder": "sk-ant-..."
         },
         "gemini": {
-          "label": "Gemini (Google) API Key",
+          "label": "Clave API de Gemini (Google)",
           "placeholder": "AIza..."
         },
         "elevenlabs": {
-          "label": "ElevenLabs API Key",
+          "label": "Clave API de ElevenLabs",
           "placeholder": "xi-..."
         },
         "supermemory": {
           "title": "Supermemory",
-          "description": "Memory backend for long-term context.",
+          "description": "Backend de memoria para contexto a largo plazo.",
           "apiKey": {
-            "label": "Supermemory API Key",
+            "label": "Clave API de Supermemory",
             "placeholder": "sm-..."
           },
           "client": {
-            "label": "Supermemory Client",
+            "label": "Cliente de Supermemory",
             "placeholder": "client-123",
-            "hint": "Used to scope user memory retrieval."
+            "hint": "Se usa para delimitar la recuperacion de memoria del usuario."
           },
           "baseUrl": {
-            "label": "Supermemory Base URL",
+            "label": "URL base de Supermemory",
             "placeholder": "https://api.supermemory.ai"
           },
-          "localMode": "Use local mode (saved locally)"
+          "localMode": "Usar modo local (guardado localmente)"
         }
       },
       "llm": {
         "enableLLM": {
-          "title": "Enable LLM",
-          "description": "Toggle model-based AI features."
+          "title": "Activar LLM",
+          "description": "Activar o desactivar las funciones de IA basadas en modelos."
         },
         "modelSelection": {
-          "title": "Generic Model Selection",
-          "description": "Used by extensions and model-agnostic AI actions."
+          "title": "Seleccion generica de modelos",
+          "description": "La usan las extensiones y las acciones de IA agnosticas al modelo."
         },
         "provider": {
-          "label": "Provider",
+          "label": "Proveedor",
           "openai": "OpenAI",
-          "anthropic": "Claude",
+          "anthropic": "Anthropic",
           "gemini": "Gemini",
-          "ollama": "Ollama",
+          "ollama": "Ollama (local)",
           "lmStudio": "LM Studio",
-          "openaiCompatible": "Custom (OpenAI-compatible)"
+          "openaiCompatible": "Personalizado (compatible con OpenAI)"
         },
         "providerDescriptions": {
           "openai": "GPT family models",
@@ -282,23 +282,23 @@
         },
         "ollama": {
           "serverUrl": {
-            "label": "Ollama Server URL",
+            "label": "URL del servidor Ollama",
             "placeholder": "http://localhost:11434"
           },
-          "models": "Ollama Models",
-          "refresh": "Refresh",
-          "checking": "Checking Ollama status...",
+          "models": "Modelos de Ollama",
+          "refresh": "Actualizar",
+          "checking": "Comprobando el estado de Ollama...",
           "notRunning": {
-            "title": "Ollama is not running",
-            "description": "Install and run Ollama to use local models.",
-            "download": "Download Ollama"
+            "title": "Ollama no esta en ejecucion",
+            "description": "Instala y ejecuta Ollama para usar modelos locales.",
+            "download": "Descargar Ollama"
           },
-          "running": "Ollama is running",
-          "installed": "Installed",
-          "downloadModel": "Download",
-          "removeModel": "Remove",
-          "downloading": "Downloading...",
-          "removing": "Removing...",
+          "running": "Ollama esta en ejecucion",
+          "installed": "Instalado",
+          "downloadModel": "Descargar",
+          "removeModel": "Eliminar",
+          "downloading": "Descargando...",
+          "removing": "Eliminando...",
           "startingDownload": "Starting download...",
           "deleteFailed": "Failed to delete model.",
           "curatedDescriptions": {
@@ -314,47 +314,47 @@
         },
         "lmStudio": {
           "baseUrl": {
-            "label": "Server URL",
-            "hint": "LM Studio's local server URL (default: http://127.0.0.1:1234/v1)"
+            "label": "URL del servidor",
+            "hint": "URL del servidor local de LM Studio (predeterminado: http://127.0.0.1:1234/v1)"
           },
           "apiKey": {
-            "toggle": "Optional API Key",
-            "placeholder": "Leave empty if not required",
-            "hint": "Only needed if you have configured authentication in LM Studio."
+            "toggle": "Clave API opcional",
+            "placeholder": "Dejar vacío si no es necesario",
+            "hint": "Solo es necesario si has configurado autenticación en LM Studio."
           }
         },
         "openaiCompatible": {
           "baseUrl": {
-            "label": "Base URL",
+            "label": "URL base",
             "placeholder": "https://api.openrouter.ai/v1",
-            "hint": "Include /v1 if your provider uses it (e.g., https://api.openai.com/v1)",
-            "appendV1": "Auto-append /v1 to base URL"
+            "hint": "Incluye /v1 si tu proveedor lo requiere (p. ej. https://api.openai.com/v1).",
+            "appendV1": "Anadir /v1 automaticamente a la URL base"
           },
           "apiKey": {
-            "label": "API Key",
+            "label": "Clave API",
             "placeholder": "sk-..."
           },
           "modelName": {
-            "label": "Model Name",
+            "label": "Nombre del modelo",
             "placeholder": "anthropic/claude-3.5-sonnet",
-            "hint": "The exact model name your provider expects (e.g., gpt-4o, meta-llama/llama-3.1-70b-instruct)"
+            "hint": "El nombre exacto del modelo que espera tu proveedor (p. ej. gpt-4o o meta-llama/llama-3.1-70b-instruct)."
           }
         },
         "defaultModel": {
-          "label": "Default Model",
-          "auto": "Auto (provider default)"
+          "label": "Modelo predeterminado",
+          "auto": "Auto (predeterminado del proveedor)"
         }
       },
       "whisper": {
         "enableWhisper": {
-          "title": "Enable SuperCmd Whisper",
-          "description": "Toggle speech-to-text features."
+          "title": "Activar SuperCmd Whisper",
+          "description": "Activar o desactivar las funciones de voz a texto."
         },
         "title": "SuperCmd Whisper",
-        "description": "Speech-to-text and transcript cleanup.",
+        "description": "Voz a texto y limpieza de transcripciones.",
         "model": {
-          "label": "Transcription Model",
-          "native": "Native (Default)",
+          "label": "Modelo",
+          "native": "Nativo (predeterminado)",
           "openaiGpt4o": "OpenAI GPT-4o Transcribe",
           "openaiWhisper": "OpenAI Whisper-1",
           "elevenlabsScribeV1": "ElevenLabs Scribe v1",
@@ -370,9 +370,9 @@
           "elevenlabsScribeV1": "ElevenLabs Scribe v1",
           "elevenlabsScribeV2": "ElevenLabs Scribe v2"
         },
-        "openaiWarning": "OpenAI Whisper selected. Add OpenAI API key in API Keys.",
-        "elevenlabsWarning": "ElevenLabs STT selected. {action} ElevenLabs API key in API Keys.",
-        "elevenlabsReady": "ElevenLabs STT selected. Cloud transcription will use your ElevenLabs key.",
+        "openaiWarning": "Se ha seleccionado OpenAI Whisper. Anade la clave API de OpenAI en API Keys.",
+        "elevenlabsWarning": "Se ha seleccionado ElevenLabs STT. {action} la clave API de ElevenLabs en API Keys.",
+        "elevenlabsReady": "Se ha seleccionado ElevenLabs STT. La transcripcion en la nube usara tu clave de ElevenLabs.",
         "recognitionLanguage": "Recognition Language",
         "providerInfo": {
           "parakeet": "Offline on-device transcription via Parakeet TDT v3. Runs on Apple Neural Engine. Requires model warmup on first use. Download the model below before using dictation.",
@@ -381,10 +381,10 @@
           "native": "Uses Apple Speech Recognition instead of SuperCmd Whisper."
         },
         "hotkeys": {
-          "title": "Whisper Hotkeys",
-          "startStop": "Start/Stop Speaking",
-          "setToFn": "Set to Fn",
-          "fnHint": "Use Set to Fn to restore the default hold-to-talk key.",
+          "title": "Atajos de Whisper",
+          "startStop": "Iniciar/detener dictado",
+          "setToFn": "Asignar a Fn",
+          "fnHint": "Usa Asignar a Fn para restaurar la tecla predeterminada de pulsar para hablar.",
           "fnHintBefore": "Use",
           "fnHintAfter": "to restore the default hold-to-talk key."
         },
@@ -393,13 +393,13 @@
           "description": "Automatically close the whisper bar when dictation finishes."
         },
         "smoothOutput": {
-          "title": "Smooth Output",
-          "description": "Clean up filler words and self-corrections."
+          "title": "Suavizar salida",
+          "description": "Limpia muletillas y autocorrecciones."
         },
         "smoothingModel": {
-          "label": "Smoothing Model",
-          "useDefault": "Use Generic Default Model",
-          "hint": "Uses your current provider models."
+          "label": "Modelo de suavizado",
+          "useDefault": "Usar modelo generico predeterminado",
+          "hint": "Usa los modelos de tu proveedor actual."
         },
         "downloadCards": {
           "modelDownloadFailed": "Model download failed.",
@@ -433,92 +433,92 @@
       },
       "speak": {
         "enableRead": {
-          "title": "Enable SuperCmd Read",
-          "description": "Toggle text-to-speech features."
+          "title": "Activar SuperCmd Read",
+          "description": "Activar o desactivar las funciones de texto a voz."
         },
         "title": "SuperCmd Read",
-        "description": "Read selected text aloud.",
+        "description": "Leer en voz alta el texto seleccionado.",
         "provider": {
-          "label": "Speech Provider",
-          "edgeTTS": "Edge TTS (Default)",
+          "label": "Proveedor de voz",
+          "edgeTTS": "Edge TTS (predeterminado)",
           "elevenlabsMultilingual": "ElevenLabs Multilingual v2",
           "elevenlabsFlash": "ElevenLabs Flash v2.5",
           "elevenlabsTurbo": "ElevenLabs Turbo v2.5",
           "elevenlabsV3": "ElevenLabs v3 (Alpha)"
         },
         "edgeTTS": {
-          "voice": "Edge TTS Voice",
-          "fetching": "Fetching full voice list...",
+          "voice": "Voz de Edge TTS",
+          "fetching": "Obteniendo la lista completa de voces...",
           "language": {
-            "label": "Language"
+            "label": "Idioma"
           },
           "gender": {
-            "label": "Voice Gender",
-            "female": "Female",
-            "male": "Male"
+            "label": "Genero de voz",
+            "female": "Femenino",
+            "male": "Masculino"
           },
           "voiceLabel": {
-            "label": "Voice"
+            "label": "Voz"
           },
           "playSample": {
-            "idle": "Play Sample Voice",
-            "playing": "Playing sample..."
+            "idle": "Reproducir voz de muestra",
+            "playing": "Reproduciendo muestra..."
           }
         },
         "elevenlabs": {
           "model": {
-            "label": "ElevenLabs Model"
+            "label": "Modelo de ElevenLabs"
           },
           "voice": {
-            "label": "ElevenLabs Voice",
-            "fetching": "Fetching your voices...",
+            "label": "Voz de ElevenLabs",
+            "fetching": "Obteniendo tus voces...",
             "fetchFailed": "Failed to fetch voices.",
-            "builtIn": "Built-in Voices",
-            "premade": "Additional Premade Voices",
-            "custom": "Your Custom Voices (Cloned/Generated)",
-            "professional": "Professional Voice Clones",
-            "available": "{count} custom voice{plural} available from your ElevenLabs account"
+            "builtIn": "Voces integradas",
+            "premade": "Voces predefinidas adicionales",
+            "custom": "Tus voces personalizadas (clonadas/generadas)",
+            "professional": "Clones de voz profesionales",
+            "available": "{count} resultado{plural} de voz personalizada en tu cuenta de ElevenLabs"
           },
           "playSample": {
-            "idle": "Play Sample Voice",
-            "playing": "Playing sample..."
+            "idle": "Reproducir voz de muestra",
+            "playing": "Reproduciendo muestra..."
           },
-          "storageHint": "SuperCmd stores this as {value}.",
-          "apiKeyWarning": "Add ElevenLabs API key in API Keys."
+          "storageHint": "SuperCmd guarda esto como {value}.",
+          "apiKeyWarning": "Anade la clave API de ElevenLabs en API Keys."
         },
         "notes": {
-          "title": "Notes",
-          "whisperDefault": "Whisper default is SuperCmd Whisper with a local ggml base model.",
-          "speakDefault": "Speak default is Edge TTS with per-language male/female voice selection.",
-          "englishVoice": "English voice options are intentionally limited to US and UK variants.",
-          "elevenlabsVoices": "ElevenLabs custom voices (cloned/generated) will appear automatically when your API key is configured."
+          "title": "Notas",
+          "whisperDefault": "Whisper usa por defecto SuperCmd Whisper con un modelo local ggml base.",
+          "speakDefault": "La salida de voz predeterminada es Edge TTS con seleccion de voz masculina/femenina por idioma.",
+          "englishVoice": "Las voces en ingles se limitan intencionadamente a las variantes de EE. UU. y Reino Unido.",
+          "elevenlabsVoices": "Las voces personalizadas de ElevenLabs (clonadas/generadas) apareceran automaticamente cuando tu clave API este configurada."
         }
       },
-      "hotkeyUpdated": "Hotkey updated.",
-      "hotkeyRemoved": "Hotkey removed.",
-      "hotkeyDuplicate": "Hotkey already used by another SuperCmd command.",
-      "hotkeyUnavailable": "Hotkey unavailable. It may be used by macOS or another app."
+      "hotkeyUpdated": "Atajo actualizado.",
+      "hotkeyRemoved": "Atajo eliminado.",
+      "hotkeyDuplicate": "Ese atajo ya esta siendo usado por otro comando de SuperCmd.",
+      "hotkeyUnavailable": "Atajo no disponible. Puede que lo este usando macOS u otra aplicacion."
     },
     "extensions": {
-      "title": "Extensions",
+      "title": "Configuración de extensiones",
       "loading": "Loading extension settings...",
       "builtIn": {
         "superCmd": {
           "title": "SuperCmd",
-          "description": "Built-in SuperCmd commands"
+          "description": "Comandos integrados de SuperCmd"
         },
         "scriptCommands": {
-          "title": "Script Commands",
-          "description": "Custom and Raycast-compatible script commands"
+          "title": "Comandos de script",
+          "description": "Comandos de script personalizados y compatibles con Raycast"
         },
         "applications": {
-          "title": "Applications",
-          "description": "Installed macOS applications with launch and hotkey support"
+          "title": "Aplicaciones",
+          "description": "Aplicaciones macOS instaladas con soporte de lanzamiento y atajos"
         },
         "systemSettings": {
-          "title": "System Settings",
-          "description": "macOS settings panes with launch and hotkey support",
-          "pane": "System Settings pane"
+          "title": "Configuración del sistema",
+          "description": "Paneles de configuración de macOS con soporte de lanzamiento y atajos",
+          "pane": "Panel de configuración del sistema"
         }
       },
       "search": {
@@ -536,7 +536,7 @@
         "customScript": "Custom Script"
       },
       "customFolders": {
-        "title": "Custom Folders",
+        "title": "Carpetas de scripts personalizadas",
         "empty": "Add Folder from Install Extension",
         "remove": "Remove"
       },
@@ -545,8 +545,8 @@
       "addFolder": "Add Folder",
       "customScript": "Custom Script",
       "columns": {
-        "name": "Name",
-        "type": "Type",
+        "name": "Nombre",
+        "type": "Tipo",
         "alias": "Alias",
         "hotkey": "Hotkey",
         "enabled": "Enabled"
@@ -556,7 +556,7 @@
         "apps": "Apps",
         "settings": "Settings",
         "scripts": "Scripts",
-        "extension": "Extension",
+        "extension": "Extensión",
         "application": "Application",
         "command": "Command",
         "menuBarCommand": "Menu Bar Command",
@@ -564,7 +564,7 @@
       },
       "alias": {
         "add": "Add Alias",
-        "placeholder": "Add Alias",
+        "placeholder": "Alias personalizado...",
         "edit": "Edit alias"
       },
       "hotkey": {
@@ -580,23 +580,23 @@
       "commandPreferences": "Command Preferences",
       "noPreferences": "No preferences",
       "clipboardBlacklist": {
-        "title": "Ignored Applications",
-        "description": "Clipboard content copied while one of these apps is frontmost will not be saved to SuperCmd's clipboard history.",
-        "add": "Add Application",
-        "remove": "Remove",
-        "empty": "No applications blacklisted. Copies from every app are saved to clipboard history.",
-        "searchPlaceholder": "Search applications…",
-        "loading": "Loading applications…",
-        "noApps": "No applications found"
+        "title": "Aplicaciones ignoradas",
+        "description": "El contenido del portapapeles copiado mientras una de estas aplicaciones está al frente no se guardará en el historial del portapapeles de SuperCmd.",
+        "add": "Agregar aplicación",
+        "remove": "Eliminar",
+        "empty": "No hay aplicaciones en la lista negra. Las copias de todas las aplicaciones se guardan en el historial del portapapeles.",
+        "searchPlaceholder": "Buscar aplicaciones…",
+        "loading": "Cargando aplicaciones…",
+        "noApps": "No se encontraron aplicaciones"
       },
       "enabled": "Enabled",
       "logout": "Logout",
       "loggedIn": "Logged into {name}",
       "uninstall": {
-        "title": "Uninstall \"{name}\"?",
-        "description": "This extension and its commands will be removed from SuperCmd.",
+        "title": "Desinstalar extensión",
+        "description": "Esta acción no se puede deshacer.",
         "cancel": "Cancel",
-        "confirm": "Uninstall",
+        "confirm": "¿Estás seguro de que quieres desinstalar esta extensión?",
         "uninstalling": "Uninstalling...",
         "success": "Uninstalled \"{name}\".",
         "failed": "Failed to uninstall \"{name}\"."
@@ -613,79 +613,79 @@
         "failed": "Failed to open custom scripts folder."
       },
       "emojiPicker": {
-        "enabled": "Enable Emoji Picker",
-        "enabledDesc": "Show emoji suggestions when typing a trigger prefix followed by a name.",
-        "triggerPrefix": "Trigger Prefix",
-        "triggerPrefixDesc": "Character that starts an emoji search. Type this followed by a name (e.g. :fire).",
-        "triggerPrefixPlaceholder": "e.g. :",
+        "enabled": "Activar selector de emoji",
+        "enabledDesc": "Muestra sugerencias de emoji al escribir un prefijo desencadenador.",
+        "triggerPrefix": "Prefijo desencadenador",
+        "triggerPrefixDesc": "Carácter que inicia la búsqueda de emoji (ej. :fuego).",
+        "triggerPrefixPlaceholder": "ej. :",
         "excludedApps": {
-          "title": "Excluded Applications",
-          "description": "The emoji picker will not appear when these apps are active. Useful for apps that have their own emoji picker (Slack, Telegram…).",
-          "add": "Add Application",
-          "remove": "Remove",
-          "empty": "No applications excluded. The picker triggers in every app.",
-          "searchPlaceholder": "Search applications…",
-          "loading": "Loading applications…",
-          "noApps": "No applications found"
+          "title": "Aplicaciones excluidas",
+          "description": "El selector de emoji no aparecerá cuando estas aplicaciones estén activas. Útil para las que tienen su propio selector (Slack, Telegram…).",
+          "add": "Añadir aplicación",
+          "remove": "Eliminar",
+          "empty": "No hay aplicaciones excluidas. El selector se activa en todas.",
+          "searchPlaceholder": "Buscar aplicaciones…",
+          "loading": "Cargando aplicaciones…",
+          "noApps": "No se encontraron aplicaciones"
         }
       }
     },
     "advanced": {
-      "title": "Advanced",
+      "title": "Configuración avanzada",
       "loading": "Loading advanced settings...",
       "settingsFolder": {
-        "title": "Settings Folder",
-        "description": "Sync settings and extensions across Macs via iCloud Drive, Dropbox, or any folder.",
-        "defaultLabel": "Default location",
-        "chooseButton": "Choose Folder…",
-        "changeButton": "Change Folder…",
-        "resetButton": "Reset to Default",
+        "title": "Carpeta de ajustes",
+        "description": "Sincroniza los ajustes y las extensiones entre tus Mac mediante iCloud Drive, Dropbox o cualquier carpeta.",
+        "defaultLabel": "Ubicación por defecto",
+        "chooseButton": "Elegir carpeta…",
+        "changeButton": "Cambiar carpeta…",
+        "resetButton": "Restablecer por defecto",
         "conflict": {
-          "title": "Settings already exist in this folder",
-          "body": "There's already a settings.json in {folder}. Which version would you like to use?",
-          "useExisting": "Use Existing Settings",
-          "useExistingHint": "Replace this Mac's settings with the synced copy.",
-          "replace": "Replace With Current Settings",
-          "replaceHint": "Overwrite the synced copy with this Mac's settings.",
-          "cancel": "Cancel"
+          "title": "Ya existen ajustes en esta carpeta",
+          "body": "Ya hay un archivo settings.json en {folder}. ¿Qué versión quieres usar?",
+          "useExisting": "Usar ajustes existentes",
+          "useExistingHint": "Reemplazar los ajustes de este Mac con la copia sincronizada.",
+          "replace": "Reemplazar con ajustes actuales",
+          "replaceHint": "Sobrescribir la copia sincronizada con los ajustes de este Mac.",
+          "cancel": "Cancelar"
         },
         "resetConfirm": {
-          "title": "Move settings back to default location?",
-          "body": "Your settings will be stored on this Mac only. The synced copy in your chosen folder won't be deleted.",
-          "confirm": "Reset to Default",
-          "cancel": "Cancel"
+          "title": "¿Mover los ajustes a la ubicación por defecto?",
+          "body": "Tus ajustes se guardarán solo en este Mac. La copia sincronizada en la carpeta elegida no se eliminará.",
+          "confirm": "Restablecer por defecto",
+          "cancel": "Cancelar"
         },
         "status": {
-          "moved": "Settings folder updated.",
-          "adopted": "Synced settings adopted.",
-          "reset": "Settings moved back to default location.",
-          "failed": "Could not update settings folder."
+          "moved": "Carpeta de ajustes actualizada.",
+          "adopted": "Ajustes sincronizados adoptados.",
+          "reset": "Ajustes movidos a la ubicación por defecto.",
+          "failed": "No se pudo actualizar la carpeta de ajustes."
         }
       },
       "disableFileSearch": {
-        "title": "Disable File & Folder Search",
-        "description": "Hide file and folder results from the main launcher search.",
-        "label": "Disable file and folder search results"
+        "title": "Desactivar búsqueda de archivos y carpetas",
+        "description": "Ocultar los resultados de archivos y carpetas de la búsqueda principal del lanzador.",
+        "label": "Desactivar resultados de búsqueda de archivos y carpetas"
       },
       "navigationStyle": {
-        "title": "Navigation Style",
-        "description": "Choose the keyboard shortcuts for navigating up, down, left, and right in the launcher.",
+        "title": "Estilo de navegación",
+        "description": "Elige los atajos de teclado para navegar arriba, abajo, izquierda y derecha en el lanzador.",
         "option": {
-          "vim": "Vim Style (^J, ^K, ^H, ^L)",
-          "macos": "macOS Style (^N, ^P, ^B, ^F)"
+          "vim": "Estilo Vim (^J, ^K, ^H, ^L)",
+          "macos": "Estilo macOS (^N, ^P, ^B, ^F)"
         }
       },
       "popToRootSearch": {
-        "title": "Pop to Root Search",
-        "description": "When you reopen SuperCmd, return to the root search after this delay. Otherwise, the previous extension or view stays open.",
+        "title": "Volver a la búsqueda raíz",
+        "description": "Al reabrir SuperCmd, vuelve a la búsqueda raíz tras este retardo. De lo contrario, la extensión o vista anterior permanece abierta.",
         "option": {
-          "immediately": "Immediately",
-          "5s": "After 5 seconds",
-          "15s": "After 15 seconds",
-          "30s": "After 30 seconds",
-          "60s": "After 60 seconds",
-          "90s": "After 90 seconds",
-          "120s": "After 120 seconds"
+          "immediately": "Inmediatamente",
+          "5s": "Después de 5 segundos",
+          "15s": "Después de 15 segundos",
+          "30s": "Después de 30 segundos",
+          "60s": "Después de 60 segundos",
+          "90s": "Después de 90 segundos",
+          "120s": "Después de 120 segundos"
         }
       },
       "clipboardRetention": {
@@ -707,70 +707,70 @@
         "label": "Enable debug mode"
       },
       "browserSearch": {
-        "title": "Browser Profiles",
-        "description": "Connect browser profiles so SuperCmd can use their local history and keep it refreshed.",
-        "enableLabel": "Use browser profiles in SuperCmd",
+        "title": "Perfiles de navegador",
+        "description": "Conecta perfiles de navegador para que SuperCmd use su historial local y lo mantenga actualizado.",
+        "enableLabel": "Usar perfiles de navegador en SuperCmd",
         "retention": {
-          "label": "History retention",
+          "label": "Retención del historial",
           "option": {
-            "7d": "7 days",
-            "30d": "30 days",
-            "90d": "90 days",
-            "180d": "180 days",
-            "365d": "1 year",
-            "forever": "Forever"
+            "7d": "7 días",
+            "30d": "30 días",
+            "90d": "90 días",
+            "180d": "180 días",
+            "365d": "1 año",
+            "forever": "Para siempre"
           }
         },
-        "clearButton": "Clear browser profile history",
-        "importLabel": "Detected browser profiles",
+        "clearButton": "Borrar historial de perfiles de navegador",
+        "importLabel": "Perfiles de navegador detectados",
         "import": {
-          "action": "Add profile",
-          "add": "Add Profile",
-          "refresh": "Refresh",
-          "remove": "Remove",
-          "running": "Refreshing…",
-          "availableHeading": "Available profiles",
-          "addedHeading": "Added profiles",
-          "noneFound": "No supported browser profiles detected",
-          "noneAdded": "No browser profiles added yet",
-          "profileRowDetail": "History: {historyCount} URLs · Bookmarks: {bookmarkCount} · Tabs: not imported yet",
-          "profileSupportNote": "Profile support currently includes Chromium browsers only. Safari and Firefox support will be added later.",
-          "enabledProfiles": "{count} profile(s) enabled for SuperCmd browser history."
+          "action": "Añadir perfil",
+          "add": "Añadir perfil",
+          "refresh": "Actualizar",
+          "remove": "Eliminar",
+          "running": "Actualizando…",
+          "availableHeading": "Perfiles disponibles",
+          "addedHeading": "Perfiles añadidos",
+          "noneFound": "No se detectaron perfiles de navegador compatibles",
+          "noneAdded": "Aún no se han añadido perfiles de navegador",
+          "profileRowDetail": "Historial: {historyCount} URL · Marcadores: {bookmarkCount} · Pestañas: {tabCount}",
+          "profileSupportNote": "La compatibilidad con perfiles incluye actualmente solo navegadores Chromium. Safari y Firefox se añadirán más adelante.",
+          "enabledProfiles": "{count} perfil(es) activado(s) para el historial de navegador de SuperCmd."
         },
         "importedData": {
-          "heading": "Imported data",
-          "total": "{count} history URLs",
-          "notImported": "Not imported yet",
+          "heading": "Datos importados",
+          "total": "{count} URL del historial",
+          "notImported": "Aún no importado",
           "history": {
-            "title": "History",
-            "description": "Visited HTTP(S) pages from added Chromium profiles.",
-            "count": "{count} URLs"
+            "title": "Historial",
+            "description": "Páginas HTTP(S) visitadas desde perfiles Chromium añadidos.",
+            "count": "{count} URL"
           },
           "tabs": {
-            "title": "Open tabs",
-            "description": "Live tab snapshots are planned, but not part of this import yet."
+            "title": "Pestañas abiertas",
+            "description": "Las capturas de pestañas en vivo están previstas, pero aún no forman parte de esta importación."
           },
           "bookmarks": {
-            "title": "Bookmarks",
-            "description": "Bookmark import is planned, but not part of this import yet."
+            "title": "Marcadores",
+            "description": "La importación de marcadores está prevista, pero aún no forma parte de esta importación."
           }
         },
         "status": {
-          "cleared": "Browser profile history cleared.",
-          "imported": "Updated {count} of {total} entries.",
-          "failed": "Action failed."
+          "cleared": "Historial de perfiles de navegador borrado.",
+          "imported": "Se actualizaron {count} de {total} entradas.",
+          "failed": "La acción falló."
         }
       }
     }
   },
   "launcher": {
-    "searchPlaceholder": "Search for apps, commands, or ask AI...",
+    "searchPlaceholder": "Buscar comandos...",
     "browserSearch": {
-      "openUrl": "Open {url}",
-      "searchFor": "Search \"{query}\"",
+      "openUrl": "Abrir {url}",
+      "searchFor": "Buscar «{query}»",
       "subtitle": {
-        "openUrl": "Default browser",
-        "search": "Web search"
+        "openUrl": "Navegador predeterminado",
+        "search": "Búsqueda web"
       }
     },
     "compact": {
@@ -792,51 +792,51 @@
     },
     "categories": {
       "recent": "Recent",
-      "applications": "Applications",
+      "applications": "Aplicaciones",
       "commands": "Commands",
-      "extensions": "Extensions",
+      "extensions": "Extensiones",
       "scripts": "Scripts",
       "settings": "Settings",
-      "files": "Files",
-      "calculator": "Calculator",
+      "files": "Archivos",
+      "calculator": "Calculadora",
       "quickLinks": "Quick Links"
     },
     "actions": {
-      "open": "Open",
+      "open": "Abrir",
       "openCommand": "Open Command",
       "openFile": "Open File",
       "execute": "Execute",
       "run": "Run",
-      "copy": "Copy",
+      "copy": "Copiar",
       "copyPath": "Copy Path",
       "copyDeeplink": "Copy Deeplink",
       "copyToClipboard": "Copy to Clipboard",
-      "paste": "Paste",
+      "paste": "Pegar",
       "showDetails": "Show Details",
       "showInFinder": "Show in Finder",
       "revealInFinder": "Reveal in Finder",
       "getInfo": "Get Info",
-      "quit": "Quit Application",
-      "forceQuit": "Force Quit Application",
-      "quitApp": "Quit {appName}",
-      "forceQuitApp": "Force quit {appName}",
-      "failedQuitting": "Failed quitting {appName}",
-      "forceQuitConfirm": "Force quit \"{appName}\"? Unsaved changes will be lost.",
+      "quit": "Salir de la aplicación",
+      "forceQuit": "Forzar salida de la aplicación",
+      "quitApp": "Salir de {appName}",
+      "forceQuitApp": "Forzar salida de {appName}",
+      "failedQuitting": "Error al salir de {appName}",
+      "forceQuitConfirm": "¿Forzar salida de \"{appName}\"? Se perderán los cambios no guardados.",
       "hide": "Hide",
       "show": "Show",
-      "preferences": "Preferences",
+      "preferences": "Preferencias",
       "actions": "Actions",
       "pinCommand": "Pin Command",
       "unpinCommand": "Unpin Command",
       "pinExtension": "Pin Extension",
       "unpinExtension": "Unpin Extension",
-      "disableCommand": "Disable Command",
+      "disableCommand": "Desactivar comando",
       "moveUp": "Move Up",
       "moveDown": "Move Down",
-      "uninstallApplication": "Uninstall Application",
-      "enableAutoQuit": "Enable Auto Quit",
-      "disableAutoQuit": "Disable Auto Quit",
-      "disableApplication": "Disable Application"
+      "uninstallApplication": "Desinstalar aplicación",
+      "enableAutoQuit": "Activar cierre automático",
+      "disableAutoQuit": "Desactivar cierre automático",
+      "disableApplication": "Desactivar aplicación"
     },
     "empty": {
       "noResults": "No results found",
@@ -868,28 +868,28 @@
   },
   "scriptCommand": {
     "setup": {
-      "title": "Configure Script Command",
-      "description": "Provide required arguments before running.",
+      "title": "Configurar comando de script",
+      "description": "Por favor ingresa los argumentos requeridos antes de ejecutar este comando de script.",
       "continue": "Continue"
     },
     "output": {
-      "success": "Success",
-      "exitCode": "Exit {code}",
+      "success": "Éxito",
+      "exitCode": "Código de salida",
       "noOutput": "(No output)"
     }
   },
   "extension": {
     "setup": {
-      "title": "Configure {name}",
-      "description": "Add required settings before running this command.",
+      "title": "Configurar {name}",
+      "description": "Por favor configura las preferencias antes de usar esta extensión.",
       "arguments": "Arguments",
-      "preferences": "Preferences",
+      "preferences": "Preferencias",
       "continue": "Continue",
       "selectOption": "Select an option"
     }
   },
   "cursorPrompt": {
-    "placeholder": "Tell AI what to do with selected text...",
+    "placeholder": "Pregunta cualquier cosa a la IA...",
     "processing": "Processing...",
     "ready": "Ready to apply",
     "applied": "Applied in editor",
@@ -985,71 +985,71 @@
     }
   },
   "clipboard": {
-    "title": "Clipboard History",
-    "empty": "Clipboard is empty",
-    "clear": "Clear History",
-    "pin": "Pin",
-    "unpin": "Unpin",
-    "delete": "Delete",
-    "copy": "Copy",
-    "paste": "Paste",
+    "title": "Historial del portapapeles",
+    "empty": "El historial del portapapeles está vacío",
+    "clear": "Limpiar historial",
+    "pin": "Fijar",
+    "unpin": "Desfijar",
+    "delete": "Eliminar",
+    "copy": "Copiar",
+    "paste": "Pegar",
     "searchPlaceholder": "Search clipboard history..."
   },
   "snippets": {
-    "title": "Snippets",
-    "empty": "No snippets yet",
-    "create": "Create Snippet",
-    "edit": "Edit Snippet",
-    "delete": "Delete Snippet",
+    "title": "Fragmentos",
+    "empty": "No hay fragmentos",
+    "create": "Crear fragmento",
+    "edit": "Editar fragmento",
+    "delete": "Eliminar fragmento",
     "searchPlaceholder": "Search snippets...",
-    "name": "Name",
-    "content": "Content",
-    "keyword": "Keyword",
+    "name": "Nombre",
+    "content": "Contenido",
+    "keyword": "Palabra clave",
     "save": "Save Snippet"
   },
   "quickLinks": {
-    "title": "Quick Links",
-    "empty": "No quick links yet",
+    "title": "Enlaces rápidos",
+    "empty": "No hay enlaces rápidos",
     "create": "Create Quick Link",
-    "edit": "Edit Quick Link",
-    "delete": "Delete Quick Link",
-    "confirmDelete": "Click again to confirm",
+    "edit": "Editar enlace rápido",
+    "delete": "Eliminar enlace rápido",
+    "confirmDelete": "Haz clic de nuevo para confirmar",
     "searchPlaceholder": "Search quick links...",
-    "name": "Name",
+    "name": "Nombre",
     "url": "URL",
-    "urlHint": "Use {placeholder} to add dynamic values like clipboard or arguments.",
-    "openWith": "Open With",
-    "defaultBrowser": "Default Browser",
-    "icon": "Icon",
-    "save": "Save Quick Link",
-    "saved": "Saved",
-    "saveFailed": "Failed to save quick link.",
-    "deleteFailed": "Failed to delete quick link.",
-    "notFound": "Quick link not found.",
-    "nameRequired": "Name is required.",
-    "urlRequired": "URL is required."
+    "urlHint": "Usa {placeholder} para añadir valores dinámicos como el portapapeles o argumentos.",
+    "openWith": "Abrir con",
+    "defaultBrowser": "Navegador predeterminado",
+    "icon": "Icono",
+    "save": "Guardar enlace rápido",
+    "saved": "Guardado",
+    "saveFailed": "No se pudo guardar el enlace rápido.",
+    "deleteFailed": "No se pudo eliminar el enlace rápido.",
+    "notFound": "Enlace rápido no encontrado.",
+    "nameRequired": "El nombre es obligatorio.",
+    "urlRequired": "La URL es obligatoria."
   },
   "appUninstall": {
-    "title": "Uninstall {appName}",
-    "filesCount": "{count} Files",
-    "uninstallButton": "Uninstall Application",
-    "scanning": "Scanning for related files...",
-    "noRemnants": "No related files found",
-    "confirmMessage": "Move {count} files ({size}) to Trash?",
-    "filterPlaceholder": "Filter files and folders by name...",
-    "sortByPath": "Sort by Path",
-    "sortBySize": "Sort by Size",
-    "markKeep": "Mark File to Keep",
-    "markRemove": "Mark File to Remove",
-    "actions": "Actions",
-    "showInfo": "Show Info in Finder",
-    "trashErrors": "Some files could not be moved to Trash:\n{errors}",
-    "uninstallSuccess": "{appName} has been uninstalled",
-    "uninstallError": "Failed to uninstall {appName}"
+    "title": "Desinstalar {appName}",
+    "filesCount": "{count} Archivos",
+    "uninstallButton": "Desinstalar aplicación",
+    "scanning": "Buscando archivos relacionados...",
+    "noRemnants": "No se encontraron archivos relacionados",
+    "confirmMessage": "¿Mover {count} archivos ({size}) a la Papelera?",
+    "filterPlaceholder": "Filtrar archivos y carpetas por nombre...",
+    "sortByPath": "Ordenar por ruta",
+    "sortBySize": "Ordenar por tamaño",
+    "markKeep": "Marcar archivo para conservar",
+    "markRemove": "Marcar archivo para eliminar",
+    "actions": "Acciones",
+    "showInfo": "Mostrar información en Finder",
+    "trashErrors": "Algunos archivos no se pudieron mover a la papelera:\n{errors}",
+    "uninstallSuccess": "{appName} ha sido desinstalado",
+    "uninstallError": "Error al desinstalar {appName}"
   },
   "fileSearch": {
-    "placeholder": "Search files...",
-    "noResults": "No files found",
+    "placeholder": "Buscar archivos...",
+    "noResults": "No se encontraron archivos",
     "searching": "Searching...",
     "filters": "Filters",
     "type": "Type",
@@ -1057,30 +1057,30 @@
     "size": "Size"
   },
   "windowManager": {
-    "title": "Window Management",
+    "title": "Gestor de ventanas",
     "arrange": "Arrange Windows",
     "resize": "Resize",
     "move": "Move",
     "focus": "Focus",
-    "close": "Close Window",
-    "minimize": "Minimize",
-    "maximize": "Maximize",
-    "fullscreen": "Fullscreen",
-    "center": "Center",
-    "leftHalf": "Left Half",
-    "rightHalf": "Right Half",
-    "topHalf": "Top Half",
-    "bottomHalf": "Bottom Half",
-    "corners": "Corners",
+    "close": "Cerrar",
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "fullscreen": "Pantalla completa",
+    "center": "Centrar",
+    "leftHalf": "Mitad izquierda",
+    "rightHalf": "Mitad derecha",
+    "topHalf": "Mitad superior",
+    "bottomHalf": "Mitad inferior",
+    "corners": "Esquinas",
     "displays": "Displays",
-    "nextDisplay": "Next Display",
-    "previousDisplay": "Previous Display"
+    "nextDisplay": "Pantalla siguiente",
+    "previousDisplay": "Pantalla anterior"
   },
   "onboarding": {
     "welcome": "Welcome to SuperCmd",
     "description": "Your productivity launcher for macOS",
-    "getStarted": "Get Started",
-    "skip": "Skip",
+    "getStarted": "Comenzar",
+    "skip": "Omitir",
     "next": "Next",
     "previous": "Previous",
     "finish": "Finish",
@@ -1215,8 +1215,8 @@
     "description": "Speech-to-text made simple",
     "start": "Start Speaking",
     "stop": "Stop Speaking",
-    "listening": "Listening...",
-    "processing": "Processing...",
+    "listening": "Escuchando...",
+    "processing": "Procesando...",
     "placeholder": "Speak now...",
     "close": "Close whisper",
     "coachmark": {
@@ -1253,25 +1253,25 @@
     }
   },
   "read": {
-    "title": "SuperCmd Read",
+    "title": "Leer texto",
     "description": "Text-to-speech for any selected text",
     "start": "Start Reading",
-    "stop": "Stop Reading",
+    "stop": "Detener",
     "reading": "Reading...",
     "noText": "No text selected"
   },
   "camera": {
-    "title": "Camera",
-    "capture": "Capture",
+    "title": "Cámara",
+    "capture": "Capturar",
     "flip": "Flip Camera",
-    "mirror": "Mirror",
+    "mirror": "Espejo",
     "settings": "Camera Settings"
   },
   "schedule": {
-    "title": "Title",
+    "title": "Calendario",
     "newEvent": "New Event",
-    "editEvent": "Edit Event",
-    "deleteEvent": "Delete Event",
+    "editEvent": "Editar evento",
+    "deleteEvent": "Eliminar evento",
     "date": "Date",
     "time": "Time",
     "duration": "Duration",
