@@ -272,9 +272,10 @@ export type AppNavigationStyle = 'vim' | 'macos';
 export interface BrowserSearchSettings {
   enabled: boolean;
   historyRetentionDays: number | null;
+  profileSourceIds: string[];
 }
 
-export type BrowserSearchEntryType = 'url' | 'search';
+export type BrowserSearchEntryType = 'url' | 'search' | 'bookmark';
 
 export type BrowserSearchSource =
   | 'user'
@@ -296,6 +297,8 @@ export interface BrowserSearchEntry {
   lastUsedAt: number;
   useCount: number;
   source: BrowserSearchSource;
+  sourceProfileId?: string;
+  sourceProfileName?: string;
 }
 
 export interface BrowserSearchAutocomplete {
@@ -307,6 +310,15 @@ export interface BrowserSearchAutocomplete {
 export interface BrowserSearchImportableBrowser {
   id: BrowserSearchSource;
   name: string;
+  available: boolean;
+}
+
+export interface BrowserSearchImportableProfile {
+  id: string;
+  browserId: BrowserSearchSource;
+  browserName: string;
+  profileId: string;
+  profileName: string;
   available: boolean;
 }
 
@@ -921,7 +933,9 @@ export interface ElectronAPI {
   browserSearchSuggest: (input: string) => Promise<string | null>;
   browserSearchClearHistory: () => Promise<boolean>;
   browserSearchListBrowsers: () => Promise<BrowserSearchImportableBrowser[]>;
+  browserSearchListProfiles: () => Promise<BrowserSearchImportableProfile[]>;
   browserSearchImport: (browserId: string) => Promise<BrowserSearchImportResult>;
+  browserSearchImportProfile: (profileSourceId: string) => Promise<BrowserSearchImportResult>;
   onBrowserSearchHistoryChanged: (callback: () => void) => (() => void);
 
   getSelectedText: () => Promise<string>;

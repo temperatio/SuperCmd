@@ -655,7 +655,7 @@ const electronAPI = {
     ipcRenderer.invoke('clipboard-read-text'),
 
   // ─── Browser Search ───────────────────────────────────────────────
-  browserSearchOpen: (input: string): Promise<{ ok: boolean; type: 'url' | 'search' | null; url: string | null }> =>
+  browserSearchOpen: (input: string): Promise<{ ok: boolean; type: 'url' | 'search' | 'bookmark' | null; url: string | null }> =>
     ipcRenderer.invoke('browser-search:open', input),
   browserSearchResolve: (input: string): Promise<{ type: 'url' | 'search'; url: string; host: string } | null> =>
     ipcRenderer.invoke('browser-search:resolve', input),
@@ -669,10 +669,16 @@ const electronAPI = {
     ipcRenderer.invoke('browser-search:clear-history'),
   browserSearchListBrowsers: (): Promise<{ id: string; name: string; available: boolean }[]> =>
     ipcRenderer.invoke('browser-search:list-browsers'),
+  browserSearchListProfiles: (): Promise<any[]> =>
+    ipcRenderer.invoke('browser-search:list-profiles'),
   browserSearchImport: (
     browserId: string
   ): Promise<{ imported: number; skipped: number; total: number; reason?: string }> =>
     ipcRenderer.invoke('browser-search:import', browserId),
+  browserSearchImportProfile: (
+    profileSourceId: string
+  ): Promise<{ imported: number; skipped: number; total: number; reason?: string }> =>
+    ipcRenderer.invoke('browser-search:import-profile', profileSourceId),
   onBrowserSearchHistoryChanged: (callback: () => void): (() => void) => {
     const listener = (_event: any) => callback();
     ipcRenderer.on('browser-search-history-changed', listener);
