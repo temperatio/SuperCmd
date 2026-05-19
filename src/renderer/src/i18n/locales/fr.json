@@ -759,6 +759,25 @@
           "cleared": "Historique des profils de navigateur effacé.",
           "imported": "{count} entrées mises à jour sur {total}.",
           "failed": "Échec de l’action."
+        },
+        "resultGroups": {
+          "label": "Priorité de la section Browser",
+          "kind": {
+            "open-tab": "Onglets ouverts",
+            "bookmark": "Signets",
+            "history": "Historique"
+          },
+          "description": {
+            "open-tab": "Onglets actifs ouverts dans les profils connectés.",
+            "bookmark": "Signets enregistrés dans les profils connectés.",
+            "history": "Pages visitées dans les profils connectés."
+          },
+          "option": {
+            "none": "Aucun",
+            "count": "{count} lignes"
+          },
+          "moveUp": "Monter",
+          "moveDown": "Descendre"
         }
       }
     }
@@ -770,8 +789,13 @@
       "searchFor": "Rechercher « {query} »",
       "subtitle": {
         "openUrl": "Navigateur par défaut",
-        "search": "Recherche web"
-      }
+        "search": "Recherche web",
+        "openTabMatch": "Onglet ouvert trouvé"
+      },
+      "focusHint": "Activer l’onglet",
+      "showAll": "Afficher tous les résultats Browser",
+      "showAllSubtitle": "{count} résultats Browser",
+      "showAllPlaceholder": "Rechercher dans les résultats Browser..."
     },
     "compact": {
       "showMore": "Show More"
@@ -799,10 +823,12 @@
       "settings": "Settings",
       "files": "Fichiers",
       "calculator": "Calculatrice",
-      "quickLinks": "Quick Links"
+      "quickLinks": "Quick Links",
+      "browser": "Navigateur"
     },
     "actions": {
       "open": "Ouvrir",
+      "focusExistingTab": "Activer l’onglet existant",
       "openCommand": "Open Command",
       "openFile": "Open File",
       "execute": "Execute",
@@ -863,7 +889,10 @@
       "extension": "Extension",
       "script": "Script",
       "settings": "Settings",
-      "quickLink": "Quick Link"
+      "quickLink": "Quick Link",
+      "openTab": "Onglet ouvert",
+      "bookmark": "Signet",
+      "history": "Historique"
     }
   },
   "scriptCommand": {

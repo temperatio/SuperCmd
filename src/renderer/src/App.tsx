@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Sparkles, ArrowRight, ArrowUp, ArrowDown, CornerDownLeft, ExternalLink, Plus, Pencil, Files, Trash2, Download, BellOff, Info, FolderOpen, Copy, Pin, Link, EyeOff, Play, XCircle, Timer } from 'lucide-react';
+import { X, Sparkles, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, CornerDownLeft, ExternalLink, Plus, Pencil, Files, Trash2, Download, BellOff, Info, FolderOpen, Copy, Pin, Link, EyeOff, Play, XCircle, Timer } from 'lucide-react';
 import supercmdLogo from '../../../supercmd.png';
 import type {
   CommandInfo,
@@ -15,6 +15,7 @@ import type {
   AppSettings,
   QuickLinkDynamicField,
   IndexedFileSearchResult,
+  BrowserSearchResultGroupSetting,
 } from '../types/electron';
 import ExtensionView from './ExtensionView';
 import ClipboardManager from './ClipboardManager';
@@ -42,7 +43,7 @@ import { useBackgroundRefresh } from './hooks/useBackgroundRefresh';
 import { useSpeakManager } from './hooks/useSpeakManager';
 import { useWhisperManager } from './hooks/useWhisperManager';
 import { useInlineArgumentAnchor } from './hooks/useInlineArgumentAnchor';
-import { useBrowserSearch } from './hooks/useBrowserSearch';
+import { useBrowserSearch, type BrowserSearchResult } from './hooks/useBrowserSearch';
 import { AI_CHAT_STORAGE_KEY, LAST_EXT_KEY, MAX_RECENT_COMMANDS } from './utils/constants';
 import { applyBaseColor } from './utils/base-color';
 import { resetAccessToken } from './raycast-api';
@@ -100,6 +101,13 @@ const MAX_LAUNCHER_FILE_RESULTS = 30;
 const MAX_LAUNCHER_FILE_CANDIDATE_RESULTS = 3000;
 const BROWSER_SEARCH_OPEN_URL_ID = 'browser-search-action-open-url';
 const BROWSER_SEARCH_PERFORM_SEARCH_ID = 'browser-search-action-perform-search';
+const BROWSER_SEARCH_RESULT_ID_PREFIX = 'browser-search-result:';
+const BROWSER_SEARCH_SHOW_ALL_RESULTS_ID = 'browser-search-action-show-all';
+const DEFAULT_BROWSER_SEARCH_RESULT_GROUPS: BrowserSearchResultGroupSetting[] = [
+  { kind: 'bookmark', limit: 2 },
+  { kind: 'open-tab', limit: 2 },
+  { kind: 'history', limit: 2 },
+];
 const MAX_LAUNCHER_FILE_RESULT_ICONS = MAX_LAUNCHER_FILE_RESULTS;
 const MIN_LAUNCHER_FILE_QUERY_LENGTH = 2;
 const MAX_INLINE_EXTENSION_ARGUMENTS = 3;
@@ -231,6 +239,44 @@ function getFileResultPathFromCommand(command: CommandInfo | null | undefined): 
     }
   }
   return null;
+}
+
+function isBrowserSearchCommand(command: CommandInfo | null | undefined): boolean {
+  const id = String(command?.id || '');
+  return id === BROWSER_SEARCH_OPEN_URL_ID ||
+    id === BROWSER_SEARCH_PERFORM_SEARCH_ID ||
+    id === BROWSER_SEARCH_SHOW_ALL_RESULTS_ID ||
+    id.startsWith(BROWSER_SEARCH_RESULT_ID_PREFIX);
+}
+
+function normalizeBrowserSearchResultGroups(rawGroups: BrowserSearchResultGroupSetting[] | undefined): BrowserSearchResultGroupSetting[] {
+  const seen = new Set<string>();
+  const groups: BrowserSearchResultGroupSetting[] = [];
+  if (Array.isArray(rawGroups)) {
+    for (const group of rawGroups) {
+      if (group.kind !== 'open-tab' && group.kind !== 'bookmark' && group.kind !== 'history') continue;
+      if (seen.has(group.kind)) continue;
+      seen.add(group.kind);
+      groups.push({ kind: group.kind, limit: Math.max(0, Math.min(8, Math.floor(Number(group.limit) || 0))) });
+    }
+  }
+  for (const fallback of DEFAULT_BROWSER_SEARCH_RESULT_GROUPS) {
+    if (!seen.has(fallback.kind)) groups.push(fallback);
+  }
+  return groups;
+}
+
+function normalizeBrowserCommandUrl(url: string | undefined): string {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    parsed.hash = '';
+    parsed.hostname = parsed.hostname.toLowerCase();
+    return parsed.toString().replace(/\/+$/, '');
+  } catch {
+    return raw.toLowerCase().replace(/#.*$/, '').replace(/\/+$/, '');
+  }
 }
 
 function getExtensionIdentityFromCommand(
@@ -366,6 +412,11 @@ const App: React.FC = () => {
   const [autoQuitAppPaths, setAutoQuitAppPaths] = useState<Set<string>>(new Set());
   const browserSearch = useBrowserSearch(searchQuery);
   const [browserSearchSkipAutoComplete, setBrowserSearchSkipAutoComplete] = useState(false);
+  const [browserSearchResultGroups, setBrowserSearchResultGroups] = useState<BrowserSearchResultGroupSetting[]>(
+    DEFAULT_BROWSER_SEARCH_RESULT_GROUPS
+  );
+  const [browserResultsViewQuery, setBrowserResultsViewQuery] = useState<string | null>(null);
+  const [browserResultsViewSelectedIndex, setBrowserResultsViewSelectedIndex] = useState(0);
   const [inlineExtensionArgumentValues, setInlineExtensionArgumentValues] = useState<
     Record<string, Record<string, string>>
   >({});
@@ -451,6 +502,7 @@ const App: React.FC = () => {
   const [memoryActionLoading, setMemoryActionLoading] = useState(false);
   const memoryFeedbackTimerRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const browserResultsViewInputRef = useRef<HTMLInputElement>(null);
   const inlineArgumentLaneRef = useRef<HTMLDivElement>(null);
   const inlineArgumentClusterRef = useRef<HTMLDivElement>(null);
   const inlineArgumentInputRefs = useRef<Array<HTMLInputElement | HTMLSelectElement | null>>([]);
@@ -553,6 +605,7 @@ const App: React.FC = () => {
     showFileSearch ||
     showNotesSearch ||
     showCanvasSearch ||
+    browserResultsViewQuery !== null ||
     showCamera ||
     showSchedule ||
     showAppUninstall
@@ -672,6 +725,7 @@ const App: React.FC = () => {
         }, {} as Record<string, string>)
       );
       setLauncherShortcut(settings.globalShortcut || 'Alt+Space');
+      setBrowserSearchResultGroups(normalizeBrowserSearchResultGroups(settings.browserSearch?.resultGroups));
       const speakToggleHotkey = settings.commandHotkeys?.['system-supercmd-whisper-speak-toggle'] ?? '';
       setWhisperSpeakToggleLabel(formatShortcutLabel(speakToggleHotkey));
       setConfiguredEdgeTtsVoice(String(settings.ai?.edgeTtsVoice || 'en-US-EricNeural'));
@@ -1093,6 +1147,7 @@ const App: React.FC = () => {
         )
       );
       setLauncherShortcut(settings.globalShortcut || 'Alt+Space');
+      setBrowserSearchResultGroups(normalizeBrowserSearchResultGroups(settings.browserSearch?.resultGroups));
       setDisableFileSearchResults(Boolean(settings.disableFileSearchResults));
       setNavigationStyle(settings.navigationStyle === 'macos' ? 'macos' : 'vim');
       const popToRootSeconds = Number(settings.popToRootSearchTimeoutSeconds);
@@ -1497,10 +1552,10 @@ const App: React.FC = () => {
   }, [contextMenu]);
 
   useEffect(() => {
-    if (!showActions && !contextMenu && !quickLinkDynamicPrompt && !aiMode && !extensionView && !showClipboardManager && !showSnippetManager && !showNotesSearch && !showQuickLinkManager && !showFileSearch && !showCursorPrompt && !showWhisper && !showSpeak && !showCamera && !showSchedule && !showWindowManager && !showAppUninstall && !showOnboarding) {
+    if (!showActions && !contextMenu && !quickLinkDynamicPrompt && !aiMode && !extensionView && !showClipboardManager && !showSnippetManager && !showNotesSearch && !showQuickLinkManager && !showFileSearch && !showCursorPrompt && !showWhisper && !showSpeak && !showCamera && !showSchedule && !showWindowManager && !showAppUninstall && !showOnboarding && browserResultsViewQuery === null) {
       restoreLauncherFocus();
     }
-  }, [showActions, contextMenu, quickLinkDynamicPrompt, aiMode, extensionView, showClipboardManager, showSnippetManager, showNotesSearch, showQuickLinkManager, showFileSearch, showCursorPrompt, showWhisper, showSpeak, showCamera, showSchedule, showWindowManager, showAppUninstall, showOnboarding, showWhisperOnboarding, restoreLauncherFocus]);
+  }, [showActions, contextMenu, quickLinkDynamicPrompt, aiMode, extensionView, showClipboardManager, showSnippetManager, showNotesSearch, showQuickLinkManager, showFileSearch, showCursorPrompt, showWhisper, showSpeak, showCamera, showSchedule, showWindowManager, showAppUninstall, showOnboarding, showWhisperOnboarding, browserResultsViewQuery, restoreLauncherFocus]);
 
   const isLauncherModeActive =
     !showActions &&
@@ -1512,6 +1567,7 @@ const App: React.FC = () => {
     !showSnippetManager &&
     !showNotesSearch &&
     !showCanvasSearch &&
+    browserResultsViewQuery === null &&
     !showQuickLinkManager &&
     !showFileSearch &&
     !showCursorPrompt &&
@@ -1883,31 +1939,61 @@ const App: React.FC = () => {
     if (aiMode) return null;
     if (browserSearchSkipAutoComplete) return null;
     if (!searchQuery) return null;
-    const completion = browserSearch.getCompletion(searchQuery);
+    const completion = browserSearch.getCompletion(searchQuery, browserSearchResultGroups);
     if (!completion) return null;
     if (completion.completion === searchQuery) return null;
     if (!completion.completion.toLowerCase().startsWith(searchQuery.toLowerCase())) return null;
     return completion;
-  }, [browserSearch, searchQuery, browserSearchSkipAutoComplete, aiMode]);
+  }, [browserSearch, browserSearchResultGroups, searchQuery, browserSearchSkipAutoComplete, aiMode]);
 
   const launcherInputValue = browserSearchAutoComplete?.completion ?? searchQuery;
+
+  const browserSearchTopResult = useMemo<BrowserSearchResult | null>(() => {
+    if (!browserSearch.enabled) return null;
+    if (aiMode) return null;
+    const subject = searchQuery.trim();
+    if (!subject) return null;
+    return browserSearch.getTopResult(subject, browserSearchResultGroups);
+  }, [browserSearch, browserSearchResultGroups, searchQuery, aiMode]);
 
   const browserSearchSyntheticCommand = useMemo<CommandInfo | null>(() => {
     if (!browserSearch.enabled) return null;
     if (aiMode) return null;
     const subject = launcherInputValue.trim();
     if (!subject) return null;
+    if (browserSearchTopResult) {
+      return {
+        id: BROWSER_SEARCH_OPEN_URL_ID,
+        title: browserSearchTopResult.title,
+        subtitle: browserSearchTopResult.subtitle,
+        category: 'system',
+        keywords: [browserSearchTopResult.title, browserSearchTopResult.subtitle, browserSearchTopResult.url],
+        alwaysOnTop: true,
+        browserMatchKind: browserSearchTopResult.kind === 'open-tab' ? 'open-tab' : 'history',
+        browserResultKind: browserSearchTopResult.kind,
+        browserActionInput: browserSearchTopResult.actionInput,
+        browserFocusAvailable: browserSearchTopResult.focusAvailable,
+      };
+    }
     const resolved = browserSearch.resolve(subject);
     if (!resolved) return null;
     if (resolved.type === 'url') {
       const displayUrl = subject.replace(/^https?:\/\//i, '').replace(/\/+$/, '') || resolved.host || subject;
+      const browserMatchKind = browserSearch.getMatchKind(subject, browserSearchAutoComplete);
+      const hasOpenTabMatch = browserMatchKind === 'open-tab';
       return {
         id: BROWSER_SEARCH_OPEN_URL_ID,
         title: t('launcher.browserSearch.openUrl', { url: displayUrl }),
-        subtitle: t('launcher.browserSearch.subtitle.openUrl'),
+        subtitle: hasOpenTabMatch
+          ? t('launcher.browserSearch.subtitle.openTabMatch')
+          : t('launcher.browserSearch.subtitle.openUrl'),
         category: 'system',
         keywords: [],
         alwaysOnTop: true,
+        browserMatchKind,
+        browserResultKind: hasOpenTabMatch ? 'open-tab' : undefined,
+        browserActionInput: subject,
+        browserFocusAvailable: hasOpenTabMatch,
       };
     }
     // Search intent: suppress when there are real app/command/contextual
@@ -1927,11 +2013,49 @@ const App: React.FC = () => {
       category: 'system',
       keywords: [],
       alwaysOnTop: true,
+      browserMatchKind: 'search',
+      browserResultKind: 'search',
+      browserActionInput: subject,
     };
-  }, [browserSearch, launcherInputValue, aiMode, t, groupedCommands]);
+  }, [browserSearch, browserSearchAutoComplete, browserSearchTopResult, launcherInputValue, aiMode, t, groupedCommands]);
+
+  const browserSearchResultCommands = useMemo<CommandInfo[]>(() => {
+    if (!browserSearch.enabled) return [];
+    if (aiMode) return [];
+    const subject = searchQuery.trim();
+    if (!subject) return [];
+    const topUrl = browserSearchTopResult ? normalizeBrowserCommandUrl(browserSearchTopResult.url) : '';
+    const limitedResults = browserSearch
+      .getResults(subject, browserSearchResultGroups)
+      .filter((result) => normalizeBrowserCommandUrl(result.url) !== topUrl);
+    const allCount = browserSearch.getAllResults(subject, browserSearchResultGroups).length;
+    const commands: CommandInfo[] = limitedResults.map((result, index): CommandInfo => ({
+      id: `${BROWSER_SEARCH_RESULT_ID_PREFIX}${result.kind}:${index}:${result.id}`,
+      title: result.title,
+      subtitle: result.subtitle,
+      category: 'system',
+      keywords: [result.title, result.subtitle, result.url],
+      browserMatchKind: result.kind === 'open-tab' ? 'open-tab' : 'history',
+      browserResultKind: result.kind,
+      browserActionInput: result.actionInput,
+      browserFocusAvailable: result.focusAvailable,
+    }));
+    if (allCount > 0) {
+      commands.push({
+        id: BROWSER_SEARCH_SHOW_ALL_RESULTS_ID,
+        title: t('launcher.browserSearch.showAll'),
+        subtitle: t('launcher.browserSearch.showAllSubtitle', { count: String(allCount) }),
+        category: 'system',
+        keywords: [subject, 'browser', 'results'],
+        browserActionInput: subject,
+      });
+    }
+    return commands;
+  }, [browserSearch, browserSearchResultGroups, browserSearchTopResult, searchQuery, aiMode, t]);
 
   const displayCommands = useMemo(() => {
     const all = [
+      ...browserSearchResultCommands,
       ...groupedCommands.contextual,
       ...groupedCommands.pinned,
       ...groupedCommands.recent,
@@ -1944,7 +2068,44 @@ const App: React.FC = () => {
     const rest = all.filter((c) => !c.alwaysOnTop);
     const ordered = [...top, ...rest];
     return browserSearchSyntheticCommand ? [browserSearchSyntheticCommand, ...ordered] : ordered;
-  }, [groupedCommands, browserSearchSyntheticCommand]);
+  }, [browserSearchResultCommands, groupedCommands, browserSearchSyntheticCommand]);
+
+  const browserResultsViewResults = useMemo(() => {
+    if (browserResultsViewQuery === null) return [];
+    return browserSearch.getAllResults(browserResultsViewQuery, browserSearchResultGroups);
+  }, [browserSearch, browserSearchResultGroups, browserResultsViewQuery]);
+
+  const browserResultsViewSections = useMemo(() => {
+    const groupOrder = normalizeBrowserSearchResultGroups(browserSearchResultGroups).map((group) => group.kind);
+    return groupOrder
+      .map((kind) => ({
+        kind,
+        title: kind === 'bookmark'
+          ? t('launcher.badges.bookmark')
+          : kind === 'open-tab'
+            ? t('launcher.badges.openTab')
+            : t('launcher.badges.history'),
+        items: browserResultsViewResults.filter((result) => result.kind === kind),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [browserSearchResultGroups, browserResultsViewResults, t]);
+
+  useEffect(() => {
+    setBrowserResultsViewSelectedIndex(0);
+  }, [browserResultsViewQuery, browserResultsViewResults.length]);
+
+  useEffect(() => {
+    if (browserResultsViewQuery === null) return;
+    window.setTimeout(() => browserResultsViewInputRef.current?.focus(), 0);
+  }, [browserResultsViewQuery]);
+
+  const openBrowserResult = useCallback(async (result: BrowserSearchResult, options?: { focusExistingTab?: boolean }) => {
+    const ok = await browserSearch.executeBrowserSearch(result.actionInput, options);
+    if (ok) {
+      setBrowserResultsViewQuery(null);
+      try { window.electron.hideWindow(); } catch {}
+    }
+  }, [browserSearch]);
 
   useEffect(() => {
     itemRefs.current = itemRefs.current.slice(0, displayCommands.length + calcOffset);
@@ -2387,10 +2548,10 @@ const App: React.FC = () => {
   }, [searchQuery, browserSearchSkipAutoComplete]);
 
   const submitBrowserSearch = useCallback(
-    async (input: string) => {
+    async (input: string, options?: { focusExistingTab?: boolean }) => {
       const trimmed = input.trim();
       if (!trimmed) return false;
-      const ok = await browserSearch.executeBrowserSearch(trimmed);
+      const ok = await browserSearch.executeBrowserSearch(trimmed, options);
       if (ok) {
         setBrowserSearchSkipAutoComplete(false);
         try { window.electron.hideWindow(); } catch {}
@@ -2570,6 +2731,16 @@ const App: React.FC = () => {
             const selected = displayCommands[selectedIndex - calcOffset];
             if (selectedFileResultPath && e.metaKey) {
               void revealFileResultByPath(selectedFileResultPath);
+            } else if (
+              e.metaKey &&
+              !e.shiftKey &&
+              !e.ctrlKey &&
+              !e.altKey &&
+              selected &&
+              isBrowserSearchCommand(selected) &&
+              selected.browserFocusAvailable
+            ) {
+              void submitBrowserSearch(String(selected.browserActionInput || launcherInputValue).trim(), { focusExistingTab: true });
             } else if (selected) {
               handleCommandExecute(selected);
             }
@@ -3132,8 +3303,13 @@ const App: React.FC = () => {
       // Browser-search synthetic action: open the resolved URL/search query
       // in the default browser. Bypasses recent-commands tracking — the
       // browser-search history module records the entry itself.
-      if (command.id === BROWSER_SEARCH_OPEN_URL_ID || command.id === BROWSER_SEARCH_PERFORM_SEARCH_ID) {
-        const subject = launcherInputValue.trim();
+      if (isBrowserSearchCommand(command)) {
+        if (command.id === BROWSER_SEARCH_SHOW_ALL_RESULTS_ID) {
+          setBrowserResultsViewQuery(String(command.browserActionInput || launcherInputValue).trim());
+          setShowActions(false);
+          return;
+        }
+        const subject = String(command.browserActionInput || launcherInputValue).trim();
         if (subject) {
           await submitBrowserSearch(subject);
         }
@@ -3357,6 +3533,37 @@ const App: React.FC = () => {
               await fetchCommands({ showLoading: false });
             },
           },
+        ] as LauncherAction[];
+      }
+
+      if (isBrowserSearchCommand(command)) {
+        if (command.id === BROWSER_SEARCH_SHOW_ALL_RESULTS_ID) {
+          return [
+            {
+              id: 'show-all-browser-results',
+              title: t('launcher.browserSearch.showAll'),
+              shortcut: 'Enter',
+              icon: <ArrowRight className="w-4 h-4" />,
+              execute: () => handleCommandExecute(command),
+            },
+          ] as LauncherAction[];
+        }
+        const hasOpenTabMatch = command.browserFocusAvailable === true;
+        return [
+          {
+            id: 'open-browser-result',
+            title: t('launcher.actions.open'),
+            shortcut: 'Enter',
+            icon: <ExternalLink className="w-4 h-4" />,
+            execute: () => handleCommandExecute(command),
+          },
+          ...(hasOpenTabMatch ? [{
+            id: 'focus-existing-tab',
+            title: t('launcher.actions.focusExistingTab'),
+            shortcut: 'Cmd+Enter',
+            icon: <CornerDownLeft className="w-4 h-4" />,
+            execute: () => submitBrowserSearch(String(command.browserActionInput || launcherInputValue).trim(), { focusExistingTab: true }),
+          }] : []),
         ] as LauncherAction[];
       }
 
@@ -3633,6 +3840,8 @@ const App: React.FC = () => {
       showLauncherFooterStatus,
       autoQuitAppPaths,
       toggleAutoQuitForApp,
+      submitBrowserSearch,
+      launcherInputValue,
       t,
     ]
   );
@@ -4123,6 +4332,132 @@ const App: React.FC = () => {
         acceptCursorPrompt={acceptCursorPrompt}
         alwaysMountedRunners={alwaysMountedRunners}
       />
+    );
+  }
+
+  // ─── Browser Results mode ────────────────────────────────────────
+  if (browserResultsViewQuery !== null) {
+    const selectedBrowserResult = browserResultsViewResults[browserResultsViewSelectedIndex] || null;
+    const closeBrowserResults = () => {
+      setBrowserResultsViewQuery(null);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    };
+
+    return (
+      <>
+        {alwaysMountedRunners}
+        <LauncherSurface
+          backgroundImageUrl={launcherBackgroundImageUrl}
+          showBackground={shouldUseBackgroundEverywhere}
+          backgroundBlurPercent={launcherBackgroundImageBlurPercent}
+          backgroundOpacityPercent={launcherBackgroundImageOpacityPercent}
+        >
+          <div className="h-full flex flex-col">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--ui-divider)]">
+              <button
+                type="button"
+                onClick={closeBrowserResults}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-white/[0.06]"
+                aria-label={t('common.back')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <input
+                ref={browserResultsViewInputRef}
+                value={browserResultsViewQuery}
+                onChange={(event) => setBrowserResultsViewQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape' || (event.key === 'Backspace' && !browserResultsViewQuery)) {
+                    event.preventDefault();
+                    closeBrowserResults();
+                    return;
+                  }
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setBrowserResultsViewSelectedIndex((index) => Math.min(index + 1, browserResultsViewResults.length - 1));
+                    return;
+                  }
+                  if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    setBrowserResultsViewSelectedIndex((index) => Math.max(index - 1, 0));
+                    return;
+                  }
+                  if (event.key === 'Enter' && selectedBrowserResult) {
+                    event.preventDefault();
+                    void openBrowserResult(selectedBrowserResult, event.metaKey && selectedBrowserResult.focusAvailable ? { focusExistingTab: true } : undefined);
+                  }
+                }}
+                placeholder={t('launcher.browserSearch.showAllPlaceholder')}
+                className="flex-1 bg-transparent outline-none text-[0.95rem] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)]"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5">
+              {browserResultsViewResults.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
+                  {t('launcher.status.noMatchingResults')}
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {browserResultsViewSections.reduce(
+                    (acc, section) => {
+                      acc.nodes.push(
+                        <div
+                          key={`browser-section-${section.kind}`}
+                          className="px-3 pt-2 pb-1 text-[0.6875rem] uppercase tracking-wider text-[var(--text-subtle)] font-medium"
+                        >
+                          {section.title}
+                        </div>
+                      );
+                      section.items.forEach((result) => {
+                        const flatIndex = acc.index++;
+                        const selected = flatIndex === browserResultsViewSelectedIndex;
+                        acc.nodes.push(
+                          <div
+                            key={result.id}
+                            className={`command-item px-3 py-2 rounded-lg cursor-pointer ${selected ? 'selected' : ''}`}
+                            onMouseEnter={() => setBrowserResultsViewSelectedIndex(flatIndex)}
+                            onClick={() => void openBrowserResult(result)}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                {renderCommandIcon({
+                                  id: result.id,
+                                  title: result.title,
+                                  subtitle: result.subtitle,
+                                  category: 'system',
+                                  browserResultKind: result.kind,
+                                })}
+                              </div>
+                              <div className="min-w-0 flex-1 flex items-center gap-2">
+                                <div className="text-[var(--text-primary)] text-[0.8125rem] font-medium truncate tracking-[0.004em]">
+                                  {result.title}
+                                </div>
+                                <div className="text-[var(--text-muted)] text-[0.6875rem] font-medium truncate">
+                                  {result.subtitle}
+                                </div>
+                              </div>
+                              {result.focusAvailable ? (
+                                <span className="inline-flex items-center gap-1 text-[0.6875rem] text-[var(--text-muted)] font-medium flex-shrink-0">
+                                  <span>{t('launcher.browserSearch.focusHint')}</span>
+                                  <kbd className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded bg-[var(--kbd-bg)] px-1 text-[10px] font-medium text-[var(--text-muted)]">⌘</kbd>
+                                  <kbd className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded bg-[var(--kbd-bg)] px-1 text-[10px] font-medium text-[var(--text-muted)]">↩</kbd>
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      });
+                      return acc;
+                    },
+                    { nodes: [] as React.ReactNode[], index: 0 }
+                  ).nodes}
+                </div>
+              )}
+            </div>
+          </div>
+        </LauncherSurface>
+      </>
     );
   }
 
@@ -4638,6 +4973,7 @@ const App: React.FC = () => {
                 const strip = (items: CommandInfo[]) => items.filter((c) => !topIds.has(c.id));
                 return [
                   { title: '', items: allTopItems },
+                  { title: t('launcher.categories.browser'), items: strip(browserSearchResultCommands) },
                   { title: t('launcher.sections.selectedText'), items: strip(groupedCommands.contextual) },
                   { title: t('launcher.sections.pinned'), items: strip(groupedCommands.pinned) },
                   { title: t('launcher.categories.recent'), items: strip(groupedCommands.recent) },
@@ -4668,6 +5004,9 @@ const App: React.FC = () => {
                       const commandAlias = String(commandAliases[command.id] || '').trim();
                       const commandHotkey = String(commandHotkeys[command.id] || '').trim();
                       const hotkeyParts = commandHotkey ? getShortcutDisplayParts(commandHotkey) : [];
+                      const browserFocusParts = command.browserMatchKind === 'open-tab'
+                        ? getShortcutDisplayParts('Cmd+Enter')
+                        : [];
                       acc.nodes.push(
                         <div
                           key={command.id}
@@ -4722,6 +5061,18 @@ const App: React.FC = () => {
                                 </span>
                               ) : null}
                             </div>
+                            {browserFocusParts.length > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-[0.6875rem] text-[var(--text-muted)] font-medium flex-shrink-0">
+                                <span>{t('launcher.browserSearch.focusHint')}</span>
+                                <span className="inline-flex items-center gap-0.5">
+                                  {browserFocusParts.map((part, idx) => (
+                                    <kbd key={idx} className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded bg-[var(--kbd-bg)] px-1 text-[10px] font-medium text-[var(--text-muted)]">
+                                      {part}
+                                    </kbd>
+                                  ))}
+                                </span>
+                              </span>
+                            ) : null}
                             {typeBadgeLabel ? (
                               <div className="text-[var(--text-muted)] text-[0.6875rem] font-medium leading-none flex-shrink-0 truncate">
                                 {typeBadgeLabel}

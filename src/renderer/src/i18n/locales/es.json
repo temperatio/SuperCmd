@@ -759,6 +759,25 @@
           "cleared": "Historial de perfiles de navegador borrado.",
           "imported": "Se actualizaron {count} de {total} entradas.",
           "failed": "La acción falló."
+        },
+        "resultGroups": {
+          "label": "Prioridad de la sección Browser",
+          "kind": {
+            "open-tab": "Pestañas abiertas",
+            "bookmark": "Marcadores",
+            "history": "Historial"
+          },
+          "description": {
+            "open-tab": "Pestañas activas abiertas en perfiles conectados.",
+            "bookmark": "Marcadores guardados de perfiles conectados.",
+            "history": "Páginas visitadas de perfiles conectados."
+          },
+          "option": {
+            "none": "Ninguno",
+            "count": "{count} filas"
+          },
+          "moveUp": "Mover arriba",
+          "moveDown": "Mover abajo"
         }
       }
     }
@@ -770,8 +789,13 @@
       "searchFor": "Buscar «{query}»",
       "subtitle": {
         "openUrl": "Navegador predeterminado",
-        "search": "Búsqueda web"
-      }
+        "search": "Búsqueda web",
+        "openTabMatch": "Pestaña abierta encontrada"
+      },
+      "focusHint": "Enfocar pestaña",
+      "showAll": "Mostrar todos los resultados de Browser",
+      "showAllSubtitle": "{count} resultados de Browser",
+      "showAllPlaceholder": "Buscar resultados de Browser..."
     },
     "compact": {
       "showMore": "Show More"
@@ -799,10 +823,12 @@
       "settings": "Settings",
       "files": "Archivos",
       "calculator": "Calculadora",
-      "quickLinks": "Quick Links"
+      "quickLinks": "Quick Links",
+      "browser": "Navegador"
     },
     "actions": {
       "open": "Abrir",
+      "focusExistingTab": "Enfocar pestaña existente",
       "openCommand": "Open Command",
       "openFile": "Open File",
       "execute": "Execute",
@@ -863,7 +889,10 @@
       "extension": "Extension",
       "script": "Script",
       "settings": "Settings",
-      "quickLink": "Quick Link"
+      "quickLink": "Quick Link",
+      "openTab": "Pestaña abierta",
+      "bookmark": "Marcador",
+      "history": "Historial"
     }
   },
   "scriptCommand": {
