@@ -1008,6 +1008,10 @@ const App: React.FC = () => {
         }
         if (result.mode === 'inline') {
           await fetchCommands();
+        } else {
+                    // Silent/default mode: hide the launcher window so focus returns to the user's active app.
+                    // Mirrors the behaviour of useLauncherCommandExecution (background:false path).
+                    void window.electron.hideWindow();
         }
       })();
     };
