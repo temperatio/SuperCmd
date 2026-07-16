@@ -257,6 +257,25 @@ type ParakeetModelStatus = {
 let parakeetModelStatus: ParakeetModelStatus | null = null;
 let parakeetModelEnsurePromise: Promise<string> | null = null;
 
+// Persistent transcription servers (parakeet/qwen3/whisper.cpp) keep a model
+// loaded in memory for fast repeat use, but otherwise sit idle for the rest
+// of the session once used once. Auto-kill them after a period of no use so
+// they don't hold their memory footprint until the app quits.
+const AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS = 10 * 60_000; // 10 minutes
+
+function createIdleShutdownScheduler(killFn: () => void, idleMs: number): { bump: () => void } {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return {
+    bump(): void {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        killFn();
+      }, idleMs);
+    },
+  };
+}
+
 // Persistent serve-mode process for fast transcription (models stay loaded in memory)
 let parakeetServerProcess: any = null; // ChildProcess
 let parakeetServerReady = false;
@@ -264,6 +283,10 @@ let parakeetServerStarting: Promise<void> | null = null;
 let parakeetServerBuffer = '';
 type PendingParakeetRequest = { resolve: (json: any) => void; reject: (err: Error) => void };
 let parakeetPendingRequest: PendingParakeetRequest | null = null;
+const parakeetIdleShutdown = createIdleShutdownScheduler(
+  () => killParakeetServer(),
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS
+);
 
 function killParakeetServer(): void {
   if (parakeetServerProcess) {
@@ -283,6 +306,7 @@ function killParakeetServer(): void {
 }
 
 function ensureParakeetServer(): Promise<void> {
+  parakeetIdleShutdown.bump();
   if (parakeetServerReady && parakeetServerProcess && !parakeetServerProcess.killed) {
     return Promise.resolve();
   }
@@ -619,6 +643,10 @@ let qwen3ServerStarting: Promise<void> | null = null;
 let qwen3ServerBuffer = '';
 type PendingQwen3Request = { resolve: (json: any) => void; reject: (err: Error) => void };
 let qwen3PendingRequest: PendingQwen3Request | null = null;
+const qwen3IdleShutdown = createIdleShutdownScheduler(
+  () => killQwen3Server(),
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS
+);
 
 function killQwen3Server(): void {
   if (qwen3ServerProcess) {
@@ -638,6 +666,7 @@ function killQwen3Server(): void {
 }
 
 function ensureQwen3Server(): Promise<void> {
+  qwen3IdleShutdown.bump();
   if (qwen3ServerReady && qwen3ServerProcess && !qwen3ServerProcess.killed) {
     return Promise.resolve();
   }
@@ -1153,6 +1182,10 @@ let whisperCppServerStarting: Promise<void> | null = null;
 let whisperCppServerBuffer = '';
 type PendingWhisperCppRequest = { resolve: (json: any) => void; reject: (err: Error) => void };
 let whisperCppPendingRequest: PendingWhisperCppRequest | null = null;
+const whisperCppIdleShutdown = createIdleShutdownScheduler(
+  () => killWhisperCppServer(),
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS
+);
 
 function killWhisperCppServer(): void {
   if (whisperCppServerProcess) {
@@ -1172,6 +1205,7 @@ function killWhisperCppServer(): void {
 }
 
 function ensureWhisperCppServer(): Promise<void> {
+  whisperCppIdleShutdown.bump();
   if (whisperCppServerReady && whisperCppServerProcess && !whisperCppServerProcess.killed) {
     return Promise.resolve();
   }
