@@ -13605,8 +13605,9 @@ app.whenReady().then(async () => {
   trackEvent("app_started");
   app.setAsDefaultProtocolClient('supercmd');
   scrubInternalClipboardProbe('app startup');
-  // Warm the worker so the first window-management action does not race spawn.
-  setTimeout(() => { ensureWindowManagerWorker(); }, 0);
+  // Worker is forked lazily by callWindowManagerWorker() on first actual use
+  // (ensureWindowManagerWorker() inside sendAttempt) — most sessions never
+  // touch window management, so we no longer pre-warm it at startup.
 
   // Some external image hosts (e.g. libgen.bz, libgen.li, libgen.is) only
   // serve covers when a Referer header is present — without one they return
