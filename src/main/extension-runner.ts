@@ -541,13 +541,24 @@ function normalizePreferenceSchema(pref: any, scope: 'extension' | 'command'): E
 
 // ─── Discovery ──────────────────────────────────────────────────────
 
+const DISCOVERY_YIELD_EVERY_N_EXTENSIONS = 5;
+
 /**
  * Scan installed extensions directory and return a flat list of
  * commands that should appear in the launcher.
+ *
+ * Yields back to the event loop every few extensions so a large install
+ * (many manifests + icon reads, all sync fs calls) doesn't monopolize the
+ * single main-process thread for the whole scan in one uninterrupted burst.
  */
-export function discoverInstalledExtensionCommands(): ExtensionCommandInfo[] {
+export async function discoverInstalledExtensionCommands(): Promise<ExtensionCommandInfo[]> {
   const results: ExtensionCommandInfo[] = [];
-  for (const source of collectInstalledExtensions()) {
+  const sources = collectInstalledExtensions();
+  for (let i = 0; i < sources.length; i++) {
+    if (i > 0 && i % DISCOVERY_YIELD_EVERY_N_EXTENSIONS === 0) {
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    const source = sources[i];
     const extPath = source.extPath;
     const extName = source.extName;
 

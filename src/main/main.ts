@@ -19009,7 +19009,7 @@ if let tiff = image?.tiffRepresentation {
 
   // Get all menu-bar extension bundles so the renderer can run them
   ipcMain.handle('get-menubar-extensions', async () => {
-    const allCmds = discoverInstalledExtensionCommands();
+    const allCmds = await discoverInstalledExtensionCommands();
     const menuBarCmds = allCmds.filter((c) => c.mode === 'menu-bar');
 
     const bundles: any[] = [];
@@ -19286,7 +19286,7 @@ if let tiff = image?.tiffRepresentation {
   // This populates cachedCommands with cacheTimestamp=0 (stale), so the first
   // getAvailableCommands() call serves the disk cache immediately and kicks off
   // a silent background refresh.
-  initCommandsCache();
+  await initCommandsCache();
 
   createWindow();
 
