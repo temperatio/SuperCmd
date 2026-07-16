@@ -1719,6 +1719,23 @@ const windowManagerWorkerPending = new Map<number, {
   timer: ReturnType<typeof setTimeout>;
 }>();
 
+// ─── Graceful shutdown: drain in-flight extension/script work ───────
+// Extension bundling (esbuild + fs) and script command execution
+// (child_process) run real Node async work on the main process. If one of
+// those callbacks completes after Electron starts tearing down the V8/Node
+// environment on quit, Node has been observed to abort natively
+// (EXC_BREAKPOINT/SIGTRAP) instead of throwing a catchable JS error. Track
+// this work so before-quit can wait for it to settle first.
+const EXTENSION_WORK_QUIT_DRAIN_TIMEOUT_MS = 2000;
+const inFlightExtensionWork = new Set<Promise<unknown>>();
+
+function trackInFlightExtensionWork<T>(promise: Promise<T>): Promise<T> {
+  inFlightExtensionWork.add(promise);
+  const untrack = () => { inFlightExtensionWork.delete(promise); };
+  promise.then(untrack, untrack);
+  return promise;
+}
+
 function parseMajorVersion(value: string | undefined): number | null {
   if (!value) return null;
   const major = Number.parseInt(String(value).split('.')[0], 10);
@@ -7902,7 +7919,7 @@ async function buildLaunchBundle(options: {
     sourceExtensionName,
     sourcePreferences,
   } = options;
-  const result = await getExtensionBundle(extensionName, commandName);
+  const result = await trackInFlightExtensionWork(getExtensionBundle(extensionName, commandName));
   if (!result) {
     throw new Error(`Command "${commandName}" not found in extension "${extensionName}"`);
   }
@@ -13596,7 +13613,7 @@ async function rebuildExtensions() {
       // This ensures we always have fresh builds on startup.
       console.log(`Rebuilding extension: ${name}`);
       try {
-        await buildAllCommands(name);
+        await trackInFlightExtensionWork(buildAllCommands(name));
       } catch (e) {
         console.error(`Failed to rebuild ${name}:`, e);
       }
@@ -15085,7 +15102,7 @@ app.whenReady().then(async () => {
     async (_event: any, extName: string, cmdName: string) => {
       try {
         // Read the pre-built bundle (built at install time), or build on-demand
-        const result = await getExtensionBundle(extName, cmdName);
+        const result = await trackInFlightExtensionWork(getExtensionBundle(extName, cmdName));
         if (!result) {
           return { error: `No pre-built bundle for ${extName}/${cmdName}. Try reinstalling the extension.` };
         }
@@ -15145,7 +15162,7 @@ app.whenReady().then(async () => {
             : {};
         const background = Boolean(payload?.background);
 
-        const executed = await executeScriptCommand(commandId, argumentValues);
+        const executed = await trackInFlightExtensionWork(executeScriptCommand(commandId, argumentValues));
         if ('missingArguments' in executed) {
           return {
             success: false,
@@ -19014,7 +19031,7 @@ if let tiff = image?.tiffRepresentation {
 
     const bundles: any[] = [];
     for (const cmd of menuBarCmds) {
-      const bundle = await getExtensionBundle(cmd.extName, cmd.cmdName);
+      const bundle = await trackInFlightExtensionWork(getExtensionBundle(cmd.extName, cmd.cmdName));
       if (bundle) {
         bundles.push({
           code: bundle.code,
@@ -19378,8 +19395,26 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', () => {
+let hasAttemptedExtensionWorkDrainOnQuit = false;
+
+app.on('before-quit', (event: any) => {
   prepareWindowsForAppQuit();
+  if (hasAttemptedExtensionWorkDrainOnQuit || inFlightExtensionWork.size === 0) return;
+  hasAttemptedExtensionWorkDrainOnQuit = true;
+  event.preventDefault();
+  const pending = Array.from(inFlightExtensionWork);
+  console.log(`[Shutdown] Draining ${pending.length} in-flight extension/script operation(s) before quitting...`);
+  const drained = Promise.allSettled(pending);
+  const timedOut = new Promise<void>((resolve) => setTimeout(resolve, EXTENSION_WORK_QUIT_DRAIN_TIMEOUT_MS));
+  Promise.race([drained, timedOut]).then(() => {
+    if (inFlightExtensionWork.size > 0) {
+      console.warn(
+        `[Shutdown] ${inFlightExtensionWork.size} extension/script operation(s) still pending after ` +
+        `${EXTENSION_WORK_QUIT_DRAIN_TIMEOUT_MS}ms; quitting anyway.`
+      );
+    }
+    app.quit();
+  });
 });
 
 app.on('will-quit', () => {
