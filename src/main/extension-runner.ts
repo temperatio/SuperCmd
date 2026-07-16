@@ -144,9 +144,53 @@ interface CachedTextFile {
   value: string;
 }
 
+/**
+ * Map-backed LRU cache with a hard size cap. Reads move the key to the
+ * most-recently-used position; inserts past the cap evict the oldest entry.
+ * Keeps long sessions that open many distinct extensions from accumulating
+ * unbounded bundle/manifest text in memory.
+ */
+class LruCache<K, V> {
+  private readonly map = new Map<K, V>();
+
+  constructor(private readonly maxEntries: number) {}
+
+  get(key: K): V | undefined {
+    const value = this.map.get(key);
+    if (value === undefined) return undefined;
+    this.map.delete(key);
+    this.map.set(key, value);
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    this.map.delete(key);
+    this.map.set(key, value);
+    if (this.map.size > this.maxEntries) {
+      const oldestKey = this.map.keys().next().value as K;
+      this.map.delete(oldestKey);
+    }
+  }
+
+  delete(key: K): void {
+    this.map.delete(key);
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
+
+  keys(): IterableIterator<K> {
+    return this.map.keys();
+  }
+}
+
+const MAX_EXTENSION_MANIFEST_CACHE_ENTRIES = 200;
+const MAX_EXTENSION_BUNDLE_CACHE_ENTRIES = 40;
+
 let _installedExtensionsSnapshot: InstalledExtensionsSnapshot | null = null;
-const _extensionManifestCache = new Map<string, CachedManifest>();
-const _extensionBundleCodeCache = new Map<string, CachedTextFile>();
+const _extensionManifestCache = new LruCache<string, CachedManifest>(MAX_EXTENSION_MANIFEST_CACHE_ENTRIES);
+const _extensionBundleCodeCache = new LruCache<string, CachedTextFile>(MAX_EXTENSION_BUNDLE_CACHE_ENTRIES);
 
 function getManagedExtensionsDir(): string {
   const dir = path.join(app.getPath('userData'), 'extensions');
