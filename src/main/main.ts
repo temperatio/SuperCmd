@@ -263,15 +263,33 @@ let parakeetModelEnsurePromise: Promise<string> | null = null;
 // they don't hold their memory footprint until the app quits.
 const AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS = 10 * 60_000; // 10 minutes
 
-function createIdleShutdownScheduler(killFn: () => void, idleMs: number): { bump: () => void } {
+// `isBusy` guards against killing a server mid-request: ensureXServer() bumps
+// the timer once, up front, before the caller has even sent its request — for
+// a transcription that runs longer than idleMs (long audio, slow hardware),
+// nothing re-bumps the timer while it's in flight. Without this guard the
+// timer would fire and kill a server that's actively working, not idle.
+function createIdleShutdownScheduler(
+  killFn: () => void,
+  idleMs: number,
+  isBusy: () => boolean
+): { bump: () => void } {
   let timer: ReturnType<typeof setTimeout> | null = null;
+  const scheduleCheck = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      if (isBusy()) {
+        // Still working — defer the kill and check again after another
+        // idle window rather than shutting down a busy server.
+        scheduleCheck();
+        return;
+      }
+      killFn();
+    }, idleMs);
+  };
   return {
     bump(): void {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = null;
-        killFn();
-      }, idleMs);
+      scheduleCheck();
     },
   };
 }
@@ -285,7 +303,8 @@ type PendingParakeetRequest = { resolve: (json: any) => void; reject: (err: Erro
 let parakeetPendingRequest: PendingParakeetRequest | null = null;
 const parakeetIdleShutdown = createIdleShutdownScheduler(
   () => killParakeetServer(),
-  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS,
+  () => parakeetPendingRequest !== null
 );
 
 function killParakeetServer(): void {
@@ -645,7 +664,8 @@ type PendingQwen3Request = { resolve: (json: any) => void; reject: (err: Error) 
 let qwen3PendingRequest: PendingQwen3Request | null = null;
 const qwen3IdleShutdown = createIdleShutdownScheduler(
   () => killQwen3Server(),
-  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS,
+  () => qwen3PendingRequest !== null
 );
 
 function killQwen3Server(): void {
@@ -1184,7 +1204,8 @@ type PendingWhisperCppRequest = { resolve: (json: any) => void; reject: (err: Er
 let whisperCppPendingRequest: PendingWhisperCppRequest | null = null;
 const whisperCppIdleShutdown = createIdleShutdownScheduler(
   () => killWhisperCppServer(),
-  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS,
+  () => whisperCppPendingRequest !== null
 );
 
 function killWhisperCppServer(): void {
