@@ -1256,7 +1256,9 @@ export async function buildSingleCommand(extName: string, cmdName: string): Prom
       extPath,
       `${extName}/${cmdName}`
     );
-    return fs.existsSync(outFile);
+    const built = fs.existsSync(outFile);
+    if (built) lastBuildError.delete(`${extName}/${cmdName}`);
+    return built;
   } catch (e: any) {
     console.error(`  On-demand esbuild failed for ${extName}/${cmdName}:`, e);
     lastBuildError.set(`${extName}/${cmdName}`, e?.message || String(e));
