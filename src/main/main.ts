@@ -13522,6 +13522,42 @@ function registerCommandHotkeys(hotkeys: Record<string, string>): void {
   syncHyperKeyMonitor();
 }
 
+// Opt-in diagnostics for the main-process JS heap. Enabled only when
+// SC_HEAP_DEBUG=1 is set, so it never runs for regular users — set it when
+// reproducing a long-session OOM to see whether the main process heap grows
+// unbounded and to capture a snapshot for retainer analysis.
+function setupHeapDebugInstrumentation(): void {
+  if (process.env.SC_HEAP_DEBUG !== '1') return;
+
+  const HEAP_LOG_INTERVAL_MS = 5 * 60 * 1000;
+  setInterval(() => {
+    const mem = process.memoryUsage();
+    console.log(
+      `[HeapDebug] rss=${(mem.rss / 1048576).toFixed(1)}MB heapUsed=${(mem.heapUsed / 1048576).toFixed(1)}MB heapTotal=${(mem.heapTotal / 1048576).toFixed(1)}MB external=${(mem.external / 1048576).toFixed(1)}MB`
+    );
+  }, HEAP_LOG_INTERVAL_MS).unref();
+
+  try {
+    const success = globalShortcut.register('CommandOrControl+Alt+Shift+H', () => {
+      try {
+        const v8 = require('v8');
+        const outDir = path.join(app.getPath('logs'), 'heap-snapshots');
+        fs.mkdirSync(outDir, { recursive: true });
+        const outFile = path.join(outDir, `main-${Date.now()}.heapsnapshot`);
+        v8.writeHeapSnapshot(outFile);
+        console.log(`[HeapDebug] Wrote heap snapshot to ${outFile}`);
+      } catch (error) {
+        console.warn('[HeapDebug] Failed to write heap snapshot:', error);
+      }
+    });
+    if (!success) {
+      console.warn('[HeapDebug] Failed to register heap snapshot shortcut');
+    }
+  } catch (error) {
+    console.warn('[HeapDebug] Error registering heap snapshot shortcut:', error);
+  }
+}
+
 function registerDevToolsShortcut(): void {
   try {
     unregisterShortcutVariants(DEVTOOLS_SHORTCUT);
@@ -19269,6 +19305,7 @@ if let tiff = image?.tiffRepresentation {
   registerGlobalShortcut(settings.globalShortcut);
   registerCommandHotkeys(settings.commandHotkeys);
   registerDevToolsShortcut();
+  setupHeapDebugInstrumentation();
 
   // Fallback: when another SuperCmd window gains focus (e.g. Settings),
   // close the launcher in default mode even if a native blur event was missed.
