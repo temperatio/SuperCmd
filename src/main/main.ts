@@ -7831,6 +7831,34 @@ function ensureAppTray(): void {
         },
         { type: 'separator' },
         {
+          label: 'Extension Store...',
+          click: () => {
+            openExtensionStoreWindow();
+          },
+        },
+        {
+          label: 'SuperCmd Settings...',
+          click: () => {
+            openSettingsWindow();
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Launch at Login',
+          type: 'checkbox',
+          checked: Boolean((loadSettings() as any).openAtLogin),
+          click: (menuItem: any) => {
+            setOpenAtLogin(menuItem.checked);
+          },
+        },
+        {
+          label: 'Check for Updates...',
+          click: () => {
+            void runAppUpdaterCheckAndInstall();
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Quit SuperCmd',
           click: () => {
             app.quit();
@@ -13705,6 +13733,55 @@ async function restartAndInstallAppUpdate(): Promise<boolean> {
   return appUpdaterRestartPromise;
 }
 
+async function runAppUpdaterCheckAndInstall(): Promise<{ success: boolean; error?: string; message?: string; state?: string }> {
+  ensureAppUpdaterConfigured();
+  if (!appUpdater) {
+    void showMemoryStatusBar('error', 'Updater not available.');
+    return { success: false, error: 'Updater not available' };
+  }
+
+  try {
+    // Step 1: Check for updates
+    void showMemoryStatusBar('processing', 'Checking for updates...');
+    const checkStatus = await checkForAppUpdates();
+    if (checkStatus.state === 'not-available') {
+      void showMemoryStatusBar('success', 'Already on latest version.');
+      return { success: true, message: 'Already on latest version', state: checkStatus.state };
+    }
+    if (checkStatus.state === 'error') {
+      void showMemoryStatusBar('error', checkStatus.message || 'Failed to check for updates');
+      return { success: false, error: checkStatus.message || 'Failed to check for updates' };
+    }
+
+    // Step 2: Download if available
+    if (checkStatus.state === 'available') {
+      void showMemoryStatusBar('processing', 'Downloading update...');
+      const downloadStatus = await downloadAppUpdate();
+      if (downloadStatus.state === 'error') {
+        void showMemoryStatusBar('error', downloadStatus.message || 'Failed to download update');
+        return { success: false, error: downloadStatus.message || 'Failed to download update' };
+      }
+    }
+
+    // Step 3: Restart if downloaded
+    if (appUpdaterStatusSnapshot.state === 'downloaded') {
+      void showMemoryStatusBar('processing', 'Restarting to install update...');
+      const installed = await restartAndInstallAppUpdate();
+      if (installed) {
+        return { success: true, message: 'Restarting to install update...', state: 'restarting' };
+      }
+      void showMemoryStatusBar('error', 'Failed to restart for update installation');
+      return { success: false, error: 'Failed to restart for update installation' };
+    }
+
+    void showMemoryStatusBar('success', checkStatus.message || 'Update check complete');
+    return { success: true, message: checkStatus.message || 'Update check complete', state: checkStatus.state };
+  } catch (error: any) {
+    void showMemoryStatusBar('error', String(error?.message || error || 'Update flow failed'));
+    return { success: false, error: String(error?.message || error || 'Update flow failed') };
+  }
+}
+
 // ─── Shortcut Management ────────────────────────────────────────────
 
 function applyOpenAtLogin(enabled: boolean): boolean {
@@ -13718,6 +13795,14 @@ function applyOpenAtLogin(enabled: boolean): boolean {
     console.warn('[LoginItems] Failed to update open-at-login:', error);
     return false;
   }
+}
+
+function setOpenAtLogin(enabled: boolean): boolean {
+  const applied = applyOpenAtLogin(Boolean(enabled));
+  if (applied) {
+    saveSettings({ openAtLogin: Boolean(enabled) } as Partial<AppSettings>);
+  }
+  return applied;
 }
 
 function disableMacSpotlightShortcuts(): boolean {
@@ -14750,52 +14835,7 @@ app.whenReady().then(async () => {
 
   // Full update flow: check → download → restart
   ipcMain.handle('app-updater-check-and-install', async () => {
-    ensureAppUpdaterConfigured();
-    if (!appUpdater) {
-      void showMemoryStatusBar('error', 'Updater not available.');
-      return { success: false, error: 'Updater not available' };
-    }
-
-    try {
-      // Step 1: Check for updates
-      void showMemoryStatusBar('processing', 'Checking for updates...');
-      const checkStatus = await checkForAppUpdates();
-      if (checkStatus.state === 'not-available') {
-        void showMemoryStatusBar('success', 'Already on latest version.');
-        return { success: true, message: 'Already on latest version', state: checkStatus.state };
-      }
-      if (checkStatus.state === 'error') {
-        void showMemoryStatusBar('error', checkStatus.message || 'Failed to check for updates');
-        return { success: false, error: checkStatus.message || 'Failed to check for updates' };
-      }
-
-      // Step 2: Download if available
-      if (checkStatus.state === 'available') {
-        void showMemoryStatusBar('processing', 'Downloading update...');
-        const downloadStatus = await downloadAppUpdate();
-        if (downloadStatus.state === 'error') {
-          void showMemoryStatusBar('error', downloadStatus.message || 'Failed to download update');
-          return { success: false, error: downloadStatus.message || 'Failed to download update' };
-        }
-      }
-
-      // Step 3: Restart if downloaded
-      if (appUpdaterStatusSnapshot.state === 'downloaded') {
-        void showMemoryStatusBar('processing', 'Restarting to install update...');
-        const installed = await restartAndInstallAppUpdate();
-        if (installed) {
-          return { success: true, message: 'Restarting to install update...', state: 'restarting' };
-        }
-        void showMemoryStatusBar('error', 'Failed to restart for update installation');
-        return { success: false, error: 'Failed to restart for update installation' };
-      }
-
-      void showMemoryStatusBar('success', checkStatus.message || 'Update check complete');
-      return { success: true, message: checkStatus.message || 'Update check complete', state: checkStatus.state };
-    } catch (error: any) {
-      void showMemoryStatusBar('error', String(error?.message || error || 'Update flow failed'));
-      return { success: false, error: String(error?.message || error || 'Update flow failed') };
-    }
+    return await runAppUpdaterCheckAndInstall();
   });
 
   function broadcastSettingsToAllWindows(result: AppSettings): void {
@@ -15114,11 +15154,7 @@ app.whenReady().then(async () => {
   );
 
   ipcMain.handle('set-open-at-login', (_event: any, enabled: boolean) => {
-    const applied = applyOpenAtLogin(Boolean(enabled));
-    if (applied) {
-      saveSettings({ openAtLogin: Boolean(enabled) } as Partial<AppSettings>);
-    }
-    return applied;
+    return setOpenAtLogin(Boolean(enabled));
   });
 
   ipcMain.handle('replace-spotlight-with-supercmd', async () => {
