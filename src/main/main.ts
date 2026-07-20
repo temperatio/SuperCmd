@@ -1813,6 +1813,13 @@ function scheduleWindowManagerWorkerRestart(): void {
 }
 
 function attachWindowManagerWorkerListeners(proc: ChildProcess): void {
+  proc.stdout?.on('data', (chunk) => {
+    console.log(`[WindowManagerWorker] ${String(chunk).trimEnd()}`);
+  });
+  proc.stderr?.on('data', (chunk) => {
+    console.error(`[WindowManagerWorker] ${String(chunk).trimEnd()}`);
+  });
+
   proc.on('message', (message: WindowManagerWorkerResponse) => {
     if (!message || typeof message !== 'object') return;
     const pending = windowManagerWorkerPending.get(Number(message.id));
@@ -1848,7 +1855,7 @@ function ensureWindowManagerWorker(): ChildProcess | null {
   try {
     const workerPath = getWindowManagerWorkerPath();
     const proc = fork(workerPath, [], {
-      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       execArgv: [],
     });
     windowManagerWorker = proc;
