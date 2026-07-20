@@ -228,6 +228,13 @@ try {
   app.setName('SuperCmd');
 } catch {}
 
+// V8's default old-space ceiling (~2GB) was observed being hit after a long
+// session (Mark-Compact unable to reclaim, then a SIGTRAP abort) even under
+// normal use. Raise it — must be set before app is ready.
+try {
+  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
+} catch {}
+
 // ─── Native Binary Helpers ──────────────────────────────────────────
 
 
@@ -13605,6 +13612,21 @@ function registerCommandHotkeys(hotkeys: Record<string, string>): void {
 // SC_HEAP_DEBUG=1 is set, so it never runs for regular users — set it when
 // reproducing a long-session OOM to see whether the main process heap grows
 // unbounded and to capture a snapshot for retainer analysis.
+function writeHeapDebugSnapshot(): void {
+  try {
+    const v8 = require('v8');
+    // /tmp instead of app.getPath('logs') — the logs dir has been observed to
+    // get swept by unrelated cleanup, losing snapshots minutes after capture.
+    const outDir = path.join(require('os').tmpdir(), 'supercmd-heap-snapshots');
+    fs.mkdirSync(outDir, { recursive: true });
+    const outFile = path.join(outDir, `main-${Date.now()}.heapsnapshot`);
+    v8.writeHeapSnapshot(outFile);
+    console.log(`[HeapDebug] Wrote heap snapshot to ${outFile}`);
+  } catch (error) {
+    console.warn('[HeapDebug] Failed to write heap snapshot:', error);
+  }
+}
+
 function setupHeapDebugInstrumentation(): void {
   if (process.env.SC_HEAP_DEBUG !== '1') return;
 
@@ -13616,19 +13638,12 @@ function setupHeapDebugInstrumentation(): void {
     );
   }, HEAP_LOG_INTERVAL_MS).unref();
 
+  // Signal-triggered capture — lets us snapshot from a script/terminal without
+  // needing the app focused or a physical keypress.
+  process.on('SIGUSR2', writeHeapDebugSnapshot);
+
   try {
-    const success = globalShortcut.register('CommandOrControl+Alt+Shift+H', () => {
-      try {
-        const v8 = require('v8');
-        const outDir = path.join(app.getPath('logs'), 'heap-snapshots');
-        fs.mkdirSync(outDir, { recursive: true });
-        const outFile = path.join(outDir, `main-${Date.now()}.heapsnapshot`);
-        v8.writeHeapSnapshot(outFile);
-        console.log(`[HeapDebug] Wrote heap snapshot to ${outFile}`);
-      } catch (error) {
-        console.warn('[HeapDebug] Failed to write heap snapshot:', error);
-      }
-    });
+    const success = globalShortcut.register('CommandOrControl+Alt+Shift+H', writeHeapDebugSnapshot);
     if (!success) {
       console.warn('[HeapDebug] Failed to register heap snapshot shortcut');
     }
