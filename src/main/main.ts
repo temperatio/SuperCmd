@@ -264,6 +264,43 @@ type ParakeetModelStatus = {
 let parakeetModelStatus: ParakeetModelStatus | null = null;
 let parakeetModelEnsurePromise: Promise<string> | null = null;
 
+// Persistent transcription servers (parakeet/qwen3/whisper.cpp) keep a model
+// loaded in memory for fast repeat use, but otherwise sit idle for the rest
+// of the session once used once. Auto-kill them after a period of no use so
+// they don't hold their memory footprint until the app quits.
+const AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS = 10 * 60_000; // 10 minutes
+
+// `isBusy` guards against killing a server mid-request: ensureXServer() bumps
+// the timer once, up front, before the caller has even sent its request — for
+// a transcription that runs longer than idleMs (long audio, slow hardware),
+// nothing re-bumps the timer while it's in flight. Without this guard the
+// timer would fire and kill a server that's actively working, not idle.
+function createIdleShutdownScheduler(
+  killFn: () => void,
+  idleMs: number,
+  isBusy: () => boolean
+): { bump: () => void } {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const scheduleCheck = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      if (isBusy()) {
+        // Still working — defer the kill and check again after another
+        // idle window rather than shutting down a busy server.
+        scheduleCheck();
+        return;
+      }
+      killFn();
+    }, idleMs);
+  };
+  return {
+    bump(): void {
+      scheduleCheck();
+    },
+  };
+}
+
 // Persistent serve-mode process for fast transcription (models stay loaded in memory)
 let parakeetServerProcess: any = null; // ChildProcess
 let parakeetServerReady = false;
@@ -271,6 +308,11 @@ let parakeetServerStarting: Promise<void> | null = null;
 let parakeetServerBuffer = '';
 type PendingParakeetRequest = { resolve: (json: any) => void; reject: (err: Error) => void };
 let parakeetPendingRequest: PendingParakeetRequest | null = null;
+const parakeetIdleShutdown = createIdleShutdownScheduler(
+  () => killParakeetServer(),
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS,
+  () => parakeetPendingRequest !== null
+);
 
 function killParakeetServer(): void {
   if (parakeetServerProcess) {
@@ -290,6 +332,7 @@ function killParakeetServer(): void {
 }
 
 function ensureParakeetServer(): Promise<void> {
+  parakeetIdleShutdown.bump();
   if (parakeetServerReady && parakeetServerProcess && !parakeetServerProcess.killed) {
     return Promise.resolve();
   }
@@ -626,6 +669,11 @@ let qwen3ServerStarting: Promise<void> | null = null;
 let qwen3ServerBuffer = '';
 type PendingQwen3Request = { resolve: (json: any) => void; reject: (err: Error) => void };
 let qwen3PendingRequest: PendingQwen3Request | null = null;
+const qwen3IdleShutdown = createIdleShutdownScheduler(
+  () => killQwen3Server(),
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS,
+  () => qwen3PendingRequest !== null
+);
 
 function killQwen3Server(): void {
   if (qwen3ServerProcess) {
@@ -645,6 +693,7 @@ function killQwen3Server(): void {
 }
 
 function ensureQwen3Server(): Promise<void> {
+  qwen3IdleShutdown.bump();
   if (qwen3ServerReady && qwen3ServerProcess && !qwen3ServerProcess.killed) {
     return Promise.resolve();
   }
@@ -1160,6 +1209,11 @@ let whisperCppServerStarting: Promise<void> | null = null;
 let whisperCppServerBuffer = '';
 type PendingWhisperCppRequest = { resolve: (json: any) => void; reject: (err: Error) => void };
 let whisperCppPendingRequest: PendingWhisperCppRequest | null = null;
+const whisperCppIdleShutdown = createIdleShutdownScheduler(
+  () => killWhisperCppServer(),
+  AI_TRANSCRIPTION_SERVER_IDLE_SHUTDOWN_MS,
+  () => whisperCppPendingRequest !== null
+);
 
 function killWhisperCppServer(): void {
   if (whisperCppServerProcess) {
@@ -1179,6 +1233,7 @@ function killWhisperCppServer(): void {
 }
 
 function ensureWhisperCppServer(): Promise<void> {
+  whisperCppIdleShutdown.bump();
   if (whisperCppServerReady && whisperCppServerProcess && !whisperCppServerProcess.killed) {
     return Promise.resolve();
   }
@@ -1691,6 +1746,23 @@ const windowManagerWorkerPending = new Map<number, {
   reject: (reason?: any) => void;
   timer: ReturnType<typeof setTimeout>;
 }>();
+
+// ─── Graceful shutdown: drain in-flight extension/script work ───────
+// Extension bundling (esbuild + fs) and script command execution
+// (child_process) run real Node async work on the main process. If one of
+// those callbacks completes after Electron starts tearing down the V8/Node
+// environment on quit, Node has been observed to abort natively
+// (EXC_BREAKPOINT/SIGTRAP) instead of throwing a catchable JS error. Track
+// this work so before-quit can wait for it to settle first.
+const EXTENSION_WORK_QUIT_DRAIN_TIMEOUT_MS = 2000;
+const inFlightExtensionWork = new Set<Promise<unknown>>();
+
+function trackInFlightExtensionWork<T>(promise: Promise<T>): Promise<T> {
+  inFlightExtensionWork.add(promise);
+  const untrack = () => { inFlightExtensionWork.delete(promise); };
+  promise.then(untrack, untrack);
+  return promise;
+}
 
 function parseMajorVersion(value: string | undefined): number | null {
   if (!value) return null;
@@ -8247,7 +8319,7 @@ async function buildLaunchBundle(options: {
     sourceExtensionName,
     sourcePreferences,
   } = options;
-  const result = await getExtensionBundle(extensionName, commandName);
+  const result = await trackInFlightExtensionWork(getExtensionBundle(extensionName, commandName));
   if (!result) {
     throw new Error(`Command "${commandName}" not found in extension "${extensionName}"`);
   }
@@ -14066,7 +14138,7 @@ async function rebuildExtensions() {
       // This ensures we always have fresh builds on startup.
       console.log(`Rebuilding extension: ${name}`);
       try {
-        await buildAllCommands(name);
+        await trackInFlightExtensionWork(buildAllCommands(name));
       } catch (e) {
         console.error(`Failed to rebuild ${name}:`, e);
       }
@@ -14109,8 +14181,9 @@ app.whenReady().then(async () => {
   trackEvent("app_started");
   app.setAsDefaultProtocolClient('supercmd');
   scrubInternalClipboardProbe('app startup');
-  // Warm the worker so the first window-management action does not race spawn.
-  setTimeout(() => { ensureWindowManagerWorker(); }, 0);
+  // Worker is forked lazily by callWindowManagerWorker() on first actual use
+  // (ensureWindowManagerWorker() inside sendAttempt) — most sessions never
+  // touch window management, so we no longer pre-warm it at startup.
 
   // Some external image hosts (e.g. libgen.bz, libgen.li, libgen.is) only
   // serve covers when a Referer header is present — without one they return
@@ -15505,7 +15578,7 @@ app.whenReady().then(async () => {
     async (_event: any, extName: string, cmdName: string) => {
       try {
         // Read the pre-built bundle (built at install time), or build on-demand
-        const result = await getExtensionBundle(extName, cmdName);
+        const result = await trackInFlightExtensionWork(getExtensionBundle(extName, cmdName));
         if (!result) {
           return { error: `No pre-built bundle for ${extName}/${cmdName}. Try reinstalling the extension.` };
         }
@@ -15565,7 +15638,7 @@ app.whenReady().then(async () => {
             : {};
         const background = Boolean(payload?.background);
 
-        const executed = await executeScriptCommand(commandId, argumentValues);
+        const executed = await trackInFlightExtensionWork(executeScriptCommand(commandId, argumentValues));
         if ('missingArguments' in executed) {
           return {
             success: false,
@@ -19429,12 +19502,12 @@ if let tiff = image?.tiffRepresentation {
 
   // Get all menu-bar extension bundles so the renderer can run them
   ipcMain.handle('get-menubar-extensions', async () => {
-    const allCmds = discoverInstalledExtensionCommands();
+    const allCmds = await discoverInstalledExtensionCommands();
     const menuBarCmds = allCmds.filter((c) => c.mode === 'menu-bar');
 
     const bundles: any[] = [];
     for (const cmd of menuBarCmds) {
-      const bundle = await getExtensionBundle(cmd.extName, cmd.cmdName);
+      const bundle = await trackInFlightExtensionWork(getExtensionBundle(cmd.extName, cmd.cmdName));
       if (bundle) {
         bundles.push({
           code: bundle.code,
@@ -19706,7 +19779,7 @@ if let tiff = image?.tiffRepresentation {
   // This populates cachedCommands with cacheTimestamp=0 (stale), so the first
   // getAvailableCommands() call serves the disk cache immediately and kicks off
   // a silent background refresh.
-  initCommandsCache();
+  await initCommandsCache();
 
   createWindow();
 
@@ -19799,8 +19872,26 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', () => {
+let hasAttemptedExtensionWorkDrainOnQuit = false;
+
+app.on('before-quit', (event: any) => {
   prepareWindowsForAppQuit();
+  if (hasAttemptedExtensionWorkDrainOnQuit || inFlightExtensionWork.size === 0) return;
+  hasAttemptedExtensionWorkDrainOnQuit = true;
+  event.preventDefault();
+  const pending = Array.from(inFlightExtensionWork);
+  console.log(`[Shutdown] Draining ${pending.length} in-flight extension/script operation(s) before quitting...`);
+  const drained = Promise.allSettled(pending);
+  const timedOut = new Promise<void>((resolve) => setTimeout(resolve, EXTENSION_WORK_QUIT_DRAIN_TIMEOUT_MS));
+  Promise.race([drained, timedOut]).then(() => {
+    if (inFlightExtensionWork.size > 0) {
+      console.warn(
+        `[Shutdown] ${inFlightExtensionWork.size} extension/script operation(s) still pending after ` +
+        `${EXTENSION_WORK_QUIT_DRAIN_TIMEOUT_MS}ms; quitting anyway.`
+      );
+    }
+    app.quit();
+  });
 });
 
 app.on('will-quit', () => {
