@@ -14,6 +14,35 @@
 process.stdout?.on?.('error', () => {});
 process.stderr?.on?.('error', () => {});
 
+// Raise V8's old-space ceiling for THIS process (the main/browser process's
+// own embedded Node runtime) by re-exec'ing with the flag directly on argv.
+// Two other approaches were tried and confirmed NOT to work for this specific
+// process: app.commandLine.appendSwitch('js-flags', ...) only reaches
+// Chromium-managed renderer processes (a real crash at the heap ceiling
+// recurred with it in place), and v8.setFlagsFromString() cannot change
+// memory-layout flags after the isolate has already been created (verified
+// empirically — heap_size_limit is unchanged before/after the call). Passing
+// --js-flags on the actual argv of a fresh process is the one mechanism
+// Electron honors for its own main-process V8 instance.
+if (!process.env.SC_HEAP_REEXECED) {
+  try {
+    const { spawn } = require('child_process');
+    const child = spawn(
+      process.execPath,
+      ['--js-flags=--max-old-space-size=4096', ...process.argv.slice(1)],
+      { stdio: 'inherit', detached: true, env: { ...process.env, SC_HEAP_REEXECED: '1' } }
+    );
+    child.unref();
+    process.exit(0);
+  } catch (error) {
+    console.warn('[HeapDebug] Failed to re-exec with raised V8 old-space limit:', error);
+  }
+}
+try {
+  const limitMb = Math.round(require('v8').getHeapStatistics().heap_size_limit / 1048576);
+  console.log(`[HeapDebug] V8 old-space limit for this process: ~${limitMb}MB`);
+} catch {}
+
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -226,13 +255,6 @@ const electron = require('electron');
 const { app, BrowserWindow, globalShortcut, ipcMain, screen, shell, Menu, Tray, nativeImage, protocol, net, dialog, systemPreferences, clipboard: systemClipboard } = electron;
 try {
   app.setName('SuperCmd');
-} catch {}
-
-// V8's default old-space ceiling (~2GB) was observed being hit after a long
-// session (Mark-Compact unable to reclaim, then a SIGTRAP abort) even under
-// normal use. Raise it — must be set before app is ready.
-try {
-  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
 } catch {}
 
 // ─── Native Binary Helpers ──────────────────────────────────────────
