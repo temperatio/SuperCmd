@@ -13,6 +13,7 @@
 import { app } from 'electron';
 import { exec, execFile, spawn } from 'child_process';
 import { promisify } from 'util';
+import { rebuildFileSearchIndex } from './file-search-index';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -1375,6 +1376,12 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
       category: 'system',
     },
     {
+      id: 'system-rebuild-file-index',
+      title: 'Rebuild File Search Index',
+      keywords: ['rebuild', 'refresh', 'reindex', 'file', 'search', 'index', 'supercmd'],
+      category: 'system',
+    },
+    {
       id: 'system-open-settings',
       title: 'SuperCmd Settings',
       keywords: ['settings', 'preferences', 'config', 'configuration', 'supercmd'],
@@ -2163,6 +2170,16 @@ export async function executeCommand(id: string): Promise<boolean> {
       return true;
     } catch (error) {
       console.error('Failed to empty trash:', error);
+      return false;
+    }
+  }
+
+  if (id === 'system-rebuild-file-index') {
+    try {
+      await rebuildFileSearchIndex('manual-command');
+      return true;
+    } catch (error) {
+      console.error('Failed to rebuild file search index:', error);
       return false;
     }
   }
